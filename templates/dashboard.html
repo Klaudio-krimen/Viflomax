@@ -6,71 +6,37 @@
     <title>Viflomax Gestión</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
     <style>
-        body { background-color: #ebeef2; font-family: sans-serif; }
-        .sap-header { background-color: #354a5f; color: white; padding: 15px 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { background-color: #ebeef2; }
+        .sap-header { background-color: #354a5f; color: white; padding: 15px; }
         .tile { 
-            background: white; border-radius: 8px; padding: 30px; text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; cursor: pointer;
-            text-decoration: none; color: #333; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; height: 180px; border: 1px solid #ddd;
+            background: white; border-radius: 8px; padding: 25px; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; text-decoration: none; color: #333; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px;
         }
-        .tile:hover { transform: translateY(-5px); border-color: #0064d1; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-        .tile i { font-size: 3.5rem; color: #0064d1; margin-bottom: 10px; }
-        .tile-title { font-weight: bold; font-size: 1.1rem; }
-        .logout-btn { color: white; text-decoration: none; border: 1px solid white; padding: 5px 15px; border-radius: 5px; }
-        .logout-btn:hover { background: white; color: #354a5f; }
+        .tile:hover { transform: translateY(-5px); border-color: #0064d1; }
+        .tile i { font-size: 3rem; color: #0064d1; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-
     <header class="sap-header d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="m-0"><i class="bi bi-droplet-fill"></i> Viflomax Gestión</h4>
-        </div>
+        <h4 class="m-0"><i class="bi bi-droplet-fill"></i> Viflomax Gestión</h4>
         <div class="d-flex align-items-center gap-3">
-            <span><i class="bi bi-person-circle"></i> {{ current_user.username }}</span>
-            <a href="/logout" class="logout-btn small">Cerrar Sesión</a>
+            <span class="small"><i class="bi bi-person"></i> {{ current_user.username }}</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">Salir</a>
         </div>
     </header>
 
     <div class="container mt-5">
-        <h5 class="text-muted mb-4 text-uppercase" style="letter-spacing: 1px;">Panel de Control</h5>
-        
         <div class="row g-4">
-            <div class="col-6 col-md-3">
-                <a href="/logistica" class="tile">
-                    <i class="bi bi-truck"></i>
-                    <span class="tile-title">Logística</span>
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="/inventario" class="tile">
-                    <i class="bi bi-box-seam"></i>
-                    <span class="tile-title">Bodega</span>
-                </a>
-            </div>
-
+            <div class="col-6 col-md-3"><a href="/logistica" class="tile"><i class="bi bi-truck"></i><b>Logística</b></a></div>
+            <div class="col-6 col-md-3"><a href="/inventario" class="tile"><i class="bi bi-box-seam"></i><b>Bodega</b></a></div>
             {% if current_user.rol == 'admin' %}
-            <div class="col-6 col-md-3">
-                <a href="/finanzas" class="tile">
-                    <i class="bi bi-cash-stack"></i>
-                    <span class="tile-title">Finanzas</span>
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="/crm" class="tile">
-                    <i class="bi bi-people-fill"></i>
-                    <span class="tile-title">CRM Clientes</span>
-                </a>
-            </div>
+            <div class="col-6 col-md-3"><a href="/finanzas" class="tile"><i class="bi bi-cash-stack"></i><b>Finanzas</b></a></div>
+            <div class="col-6 col-md-3"><a href="/crm" class="tile"><i class="bi bi-people-fill"></i><b>CRM</b></a></div>
+            <div class="col-6 col-md-3"><a href="/usuarios" class="tile"><i class="bi bi-shield-lock"></i><b>Usuarios</b></a></div>
             {% endif %}
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
