@@ -2,107 +2,71 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Logística Viflomax - Maipú</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística - Viflomax</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         :root { --sap-blue: #354a5f; --sap-highlight: #0064d1; }
-        body { background-color: #f4f7f9; }
-        .sidebar { background: var(--sap-blue); min-height: 100vh; color: white; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
-        .sidebar a { color: rgba(255,255,255,0.8); text-decoration: none; padding: 12px; display: block; transition: 0.2s; border-radius: 4px; }
-        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: white; }
-        .card-reparto { border-left: 5px solid var(--sap-highlight); }
-        .badge-sector { background: #e1f0ff; color: #0064d1; font-weight: 500; }
-        .btn-venta { background-color: #0064d1; color: white; border: none; }
-        .btn-venta:hover { background-color: #0056b3; color: white; }
+        body { background-color: #f4f7f9; font-family: sans-serif; }
+        .sap-header { background-color: var(--sap-blue); color: white; padding: 12px 20px; }
+        .card-route { border-left: 5px solid var(--sap-highlight); border-radius: 8px; }
+        .btn-action { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .badge-sector { background: #e1f0ff; color: #0064d1; font-size: 0.75rem; text-transform: uppercase; }
+        .venta-btn { background-color: var(--sap-highlight); color: white; font-weight: bold; }
+        .venta-btn:hover { background-color: #0056b3; color: white; }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <nav class="col-md-2 d-none d-md-block sidebar p-3">
-                <div class="text-center mb-4">
-                    <h5 class="fw-bold"><i class="bi bi-droplet-fill"></i> Viflomax</h5>
-                    <small class="text-white-50">Logística y Reparto</small>
-                </div>
-                <hr>
-                <a href="/"><i class="bi bi-house-door me-2"></i> Inicio</a>
-                <a href="/logistica" class="active"><i class="bi bi-truck me-2"></i> Monitor Reparto</a>
-                <a href="/crm"><i class="bi bi-people me-2"></i> Clientes</a>
-                <a href="/inventario"><i class="bi bi-box-seam me-2"></i> Bodega</a>
-                <a href="/finanzas"><i class="bi bi-cash-stack me-2"></i> Finanzas</a>
-                <hr>
-                <a href="/logout" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Salir</a>
-            </nav>
+    <header class="sap-header d-flex justify-content-between align-items-center mb-4">
+        <a href="/" class="text-white text-decoration-none"><i class="bi bi-arrow-left"></i> Volver</a>
+        <h5 class="m-0">Monitor de Reparto</h5>
+        <div class="small">Viflomax</div>
+    </header>
 
-            <main class="col-md-10 p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3><i class="bi bi-map text-primary"></i> Hoja de Ruta: Maipú</h3>
-                    <div class="text-end">
-                        <span class="text-muted d-block small">Envases en la calle</span>
-                        <h4 class="text-primary fw-bold">{{ total_envases }} Unidades</h4>
-                    </div>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-white shadow-sm p-3 text-center card-route">
+                    <span class="text-muted small">TOTAL ENVASES EN CALLE</span>
+                    <h2 class="text-primary m-0 fw-bold">{{ total_envases }}</h2>
                 </div>
+            </div>
+        </div>
 
-                <div class="mb-4">
-                    <div class="btn-group shadow-sm" role="group">
-                        <button class="btn btn-white border">Todos</button>
-                        <button class="btn btn-white border">Ciudad Satélite</button>
-                        <button class="btn btn-white border">El Abrazo</button>
-                        <button class="btn btn-white border">Pajaritos</button>
-                        <button class="btn btn-white border">Rinconada</button>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light text-muted small text-uppercase">
-                                <tr>
-                                    <th class="ps-4">Cliente / Dirección</th>
-                                    <th>Sector</th>
-                                    <th class="text-center">Envases Prestados</th>
-                                    <th>Última Visita</th>
-                                    <th class="text-end pe-4">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for c in clientes %}
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="fw-bold text-dark">{{ c.nombre }}</div>
-                                        <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ c.direccion }}</small>
-                                    </td>
-                                    <td><span class="badge badge-sector">{{ c.sector }}</span></td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a href="/modificar_envases/{{ c.id }}/restar" class="btn btn-sm btn-outline-danger p-1" style="width: 28px;">-</a>
-                                            <span class="fw-bold {{ 'text-danger' if c.envases_prestados > 0 else 'text-success' }}">
-                                                {{ c.envases_prestados }}
-                                            </span>
-                                            <a href="/modificar_envases/{{ c.id }}/sumar" class="btn btn-sm btn-outline-success p-1" style="width: 28px;">+</a>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="small">{{ c.ultima_compra.strftime('%d/%m/%Y') }}</div>
-                                        <div class="text-muted" style="font-size: 0.7rem;">{{ c.ultima_compra.strftime('%H:%M') }} hrs</div>
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <a href="/registrar_venta/{{ c.id }}" class="btn btn-venta btn-sm px-3 shadow-sm">
-                                            <i class="bi bi-check2-circle"></i> Venta
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <footer class="mt-4 text-center text-muted">
-                    <small>Viflomax Gestión - Optimizado para resolución de escritorio</small>
-                </footer>
-            </main>
+        <div class="table-responsive">
+            <table class="table bg-white rounded shadow-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente / Dirección</th>
+                        <th class="text-center">Envases</th>
+                        <th class="text-end">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clientes %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ c.nombre }}</div>
+                            <div class="text-muted small"><i class="bi bi-geo-alt"></i> {{ c.direccion }}</div>
+                            <span class="badge badge-sector mt-1">{{ c.sector }}</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                <a href="/modificar_envases/{{ c.id }}/restar" class="btn btn-outline-danger btn-action">-</a>
+                                <span class="fw-bold fs-5">{{ c.envases_prestados }}</span>
+                                <a href="/modificar_envases/{{ c.id }}/sumar" class="btn btn-outline-success btn-action">+</a>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <a href="/registrar_venta/{{ c.id }}" class="btn venta-btn btn-sm">
+                                <i class="bi bi-cart-check"></i> VENTA
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </body>
