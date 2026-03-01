@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Finanzas - SAP Pyme</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar { background: #354a5f; min-height: 100vh; color: white; }
+        .sidebar a { color: white; text-decoration: none; padding: 10px; display: block; }
+        .sidebar a:hover { background: #4a627a; }
+        .resumen-caja { border-radius: 8px; padding: 20px; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 sidebar p-3">
+                <h5>Módulos</h5>
+                <hr>
+                <a href="/"><i class="bi bi-house"></i> Inicio</a>
+                <a href="/logistica"><i class="bi bi-truck"></i> Reparto</a>
+                <a href="/inventario"><i class="bi bi-box"></i> Bodega</a>
+                <a href="/finanzas" class="bg-primary rounded"><i class="bi bi-cash-stack"></i> Finanzas</a>
+            </nav>
+            <main class="col-md-10 p-4">
+                <h3><i class="bi bi-bank"></i> Gestión de Finanzas y Caja</h3>
+                
+                <div class="row g-3 mt-3">
+                    <div class="col-md-4">
+                        <div class="resumen-caja bg-success shadow-sm">
+                            <h6>Ingresos Totales</h6>
+                            <h2>$ {{ ingresos }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="resumen-caja bg-danger shadow-sm">
+                            <h6>Egresos Totales</h6>
+                            <h2>$ {{ egresos }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="resumen-caja bg-primary shadow-sm">
+                            <h6>Saldo en Caja</h6>
+                            <h2>$ {{ saldo }}</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-5 shadow-sm">
+                    <div class="card-header"><strong>Registrar Movimiento</strong></div>
+                    <div class="card-body">
+                        <form action="/nueva_transaccion" method="POST" class="row g-3">
+                            <div class="col-md-2">
+                                <select name="tipo" class="form-select" required>
+                                    <option value="Ingreso">Ingreso</option>
+                                    <option value="Egreso">Egreso</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" name="descripcion" class="form-control" placeholder="Ej: Venta 5 bidones El Abrazo" required>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" name="monto" class="form-control" placeholder="Monto $" required>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-dark w-100">Registrar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <table class="table mt-4 table-hover">
+                    <thead class="table-light">
+                        <tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Monto</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transacciones %}
+                        <tr>
+                            <td>{{ t.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td><span class="badge {{ 'bg-success' if t.tipo == 'Ingreso' else 'bg-danger' }}">{{ t.tipo }}</span></td>
+                            <td>{{ t.descripcion }}</td>
+                            <td><strong>$ {{ t.monto }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

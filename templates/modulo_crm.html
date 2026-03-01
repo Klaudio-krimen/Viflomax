@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CRM - Viflomax</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar { background: #354a5f; min-height: 100vh; color: white; }
+        .sidebar a { color: white; text-decoration: none; padding: 10px; display: block; }
+        .sidebar a:hover { background: #4a627a; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 sidebar p-3">
+                <h5>Módulos</h5><hr>
+                <a href="/"><i class="bi bi-house"></i> Inicio</a>
+                <a href="/logistica"><i class="bi bi-truck"></i> Reparto</a>
+                <a href="/inventario"><i class="bi bi-box"></i> Bodega</a>
+                <a href="/finanzas"><i class="bi bi-cash-stack"></i> Finanzas</a>
+                <a href="/crm" class="bg-primary rounded"><i class="bi bi-people"></i> CRM</a>
+            </nav>
+            <main class="col-md-10 p-4">
+                <div class="d-flex justify-content-between">
+                    <h3><i class="bi bi-people-fill"></i> Directorio de Clientes (CRM)</h3>
+                    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formCliente">Nuevo Cliente</button>
+                </div>
+
+                <div class="collapse mt-3" id="formCliente">
+                    <div class="card card-body">
+                        <form action="/nuevo_cliente" method="POST" class="row g-3">
+                            <div class="col-md-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre" required></div>
+                            <div class="col-md-3"><input type="text" name="telefono" class="form-control" placeholder="Teléfono (+569...)"></div>
+                            <div class="col-md-3"><input type="text" name="direccion" class="form-control" placeholder="Dirección"></div>
+                            <div class="col-md-2">
+                                <select name="sector" class="form-select">
+                                    <option value="Ciudad Satélite">Ciudad Satélite</option>
+                                    <option value="El Abrazo">El Abrazo</option>
+                                    <option value="Pajaritos">Pajaritos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1"><input type="number" name="envases" class="form-control" placeholder="Env."></div>
+                            <div class="col-12"><button type="submit" class="btn btn-success">Guardar en Base de Datos</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                <table class="table mt-4 table-hover shadow-sm bg-white">
+                    <thead class="table-dark">
+                        <tr><th>Nombre</th><th>Teléfono</th><th>Ubicación</th><th>Estado Envases</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for c in clientes %}
+                        <tr>
+                            <td><strong>{{ c.nombre }}</strong></td>
+                            <td><a href="tel:{{ c.telefono }}">{{ c.telefono }}</a></td>
+                            <td>{{ c.direccion }} ({{ c.sector }})</td>
+                            <td><span class="badge {{ 'bg-danger' if c.envases_prestados > 0 else 'bg-success' }}">{{ c.envases_prestados }} prestados</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"><i class="bi bi-whatsapp"></i></button>
+                                <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

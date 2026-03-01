@@ -1,0 +1,31 @@
+<div class="row g-4 justify-content-center">
+    <div class="col-6 col-md-3">
+        <a href="/logistica" class="tile">
+            <i class="bi bi-truck"></i>
+            <span class="tile-title">Logística</span>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="/inventario" class="tile">
+            <i class="bi bi-box-seam"></i>
+            <span class="tile-title">Bodega</span>
+        </a>
+    </div>
+
+    {% if current_user.rol == 'admin' %}
+    <div class="col-6 col-md-3">
+        <a href="/finanzas" class="tile">
+            <i class="bi bi-cash-stack"></i>
+            <span class="tile-title">Finanzas</span>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="/crm" class="tile">
+            <i class="bi bi-people-fill"></i>
+            <span class="tile-title">CRM Clientes</span>
+        </a>
+    </div>
+    {% endif %}
+</div>

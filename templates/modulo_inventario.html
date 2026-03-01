@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario Bodega - SAP Pyme</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar { background: #354a5f; min-height: 100vh; color: white; }
+        .sidebar a { color: white; text-decoration: none; padding: 10px; display: block; }
+        .sidebar a:hover { background: #4a627a; }
+        .sap-card { border-top: 4px solid #0064d1; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 sidebar p-3">
+                <h5>Módulos</h5>
+                <hr>
+                <a href="/"><i class="bi bi-house"></i> Inicio</a>
+                <a href="/logistica"><i class="bi bi-truck"></i> Reparto</a>
+                <a href="/inventario" class="bg-primary rounded"><i class="bi bi-box"></i> Bodega</a>
+            </nav>
+            <main class="col-md-10 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3><i class="bi bi-box-seam"></i> Stock en Bodega Central</h3>
+                    <button class="btn btn-outline-primary btn-sm">Actualizar Stock</button>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card sap-card shadow-sm p-3 text-center">
+                            <h5 class="text-muted">Bidones 20L Llenos</h5>
+                            <h2 class="text-primary">150</h2>
+                            <small class="text-success"><i class="bi bi-arrow-up"></i> Stock Suficiente</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card sap-card shadow-sm p-3 text-center" style="border-top-color: #6c757d;">
+                            <h5 class="text-muted">Envases Vacíos (Stock)</h5>
+                            <h2>45</h2>
+                            <small class="text-muted">Listos para llenado</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card sap-card shadow-sm p-3 text-center" style="border-top-color: #ffc107;">
+                            <h5 class="text-muted">Sellos de Seguridad</h5>
+                            <h2 class="text-warning">300</h2>
+                            <small class="text-muted">Consumibles</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h5>Historial de Movimientos de Bodega</h5>
+                    <table class="table table-sm table-hover mt-3">
+                        <thead class="table-light">
+                            <tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Cantidad</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>28/02/2026</td><td>Claudio</td><td>Carga Camión 1</td><td>-40 Llenos</td></tr>
+                            <tr><td>28/02/2026</td><td>Sistema</td><td>Ingreso Producción</td><td>+100 Llenos</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
