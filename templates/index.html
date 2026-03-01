@@ -2,21 +2,44 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reparto Agua Maipú</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reparto Agua Maipú - Panel de Gestión</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-        .alerta-envase { color: red; font-weight: bold; }
+        body { background-color: #f8f9fa; }
+        .card-resumen { border-left: 5px solid #0d6efd; }
+        .alerta-envase { color: #dc3545; font-weight: bold; }
+        .sector-tag { font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: #e9ecef; }
     </style>
 </head>
-<body class="container mt-4">
-    <h2 class="mb-4">Gestión de Reparto - Maipú</h2>
-    
+<body class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-droplet-fill text-primary"></i> Gestión Agua 20L - Maipú</h2>
+        <span class="badge bg-secondary">Reparto Activo</span>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card card-resumen shadow-sm p-3">
+                <h6 class="text-muted">Envases en la Calle</h6>
+                <h3 class="text-primary">{{ total_envases }} Bidones</h3>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-resumen shadow-sm p-3" style="border-left-color: #198754;">
+                <h6 class="text-muted">Total Clientes en Cartera</h6>
+                <h3>{{ clientes_activos }}</h3>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white"><strong>Registrar Nuevo Cliente / Sector</strong></div>
         <div class="card-body">
-            <h5 class="card-title">Agregar Nuevo Cliente</h5>
             <form action="/nuevo_cliente" method="POST" class="row g-3">
-                <div class="col-md-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre" required></div>
-                <div class="col-md-3"><input type="text" name="direccion" class="form-control" placeholder="Dirección" required></div>
+                <div class="col-md-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre Cliente" required></div>
+                <div class="col-md-3"><input type="text" name="direccion" class="form-control" placeholder="Dirección Exacta" required></div>
                 <div class="col-md-3">
                     <select name="sector" class="form-select">
                         <option value="Ciudad Satélite">Ciudad Satélite</option>
@@ -24,39 +47,56 @@
                         <option value="Los Héroes">Los Héroes</option>
                         <option value="Rinconada">Rinconada</option>
                         <option value="Centro Maipú">Centro Maipú</option>
+                        <option value="Pajaritos">Pajaritos</option>
                     </select>
                 </div>
-                <div class="col-md-2"><input type="number" name="envases" class="form-control" placeholder="Envases prestados"></div>
-                <div class="col-md-1"><button type="submit" class="btn btn-success w-100">Añadir</button></div>
+                <div class="col-md-2"><input type="number" name="envases" class="form-control" placeholder="Envases Iniciales"></div>
+                <div class="col-md-1"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i></button></div>
             </form>
         </div>
     </div>
 
-    <table class="table table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Cliente</th>
-                <th>Dirección / Sector</th>
-                <th>Envases Prestados</th>
-                <th>Última Compra</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for c in clientes %}
-            <tr>
-                <td>{{ c.nombre }}</td>
-                <td>{{ c.direccion }} <br><small class="text-muted">{{ c.sector }}</small></td>
-                <td class="{{ 'alerta-envase' if c.envases_prestados > 0 else '' }}">
-                    {{ c.envases_prestados }}
-                </td>
-                <td>{{ c.ultima_compra.strftime('%d/%m/%Y') }}</td>
-                <td>
-                    <a href="/registrar_venta/{{ c.id }}" class="btn btn-sm btn-primary">Registrar Pedido</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive bg-white rounded shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Cliente</th>
+                    <th>Ubicación</th>
+                    <th>Gestión Envases</th>
+                    <th>Última Venta</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clientes %}
+                <tr>
+                    <td><strong>{{ c.nombre }}</strong></td>
+                    <td>
+                        {{ c.direccion }} <br>
+                        <span class="sector-tag">{{ c.sector }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="/modificar_envases/{{ c.id }}/restar" class="btn btn-outline-danger btn-sm">-</a>
+                            <span class="{{ 'alerta-envase' if c.envases_prestados > 0 else '' }}">
+                                {{ c.envases_prestados }}
+                            </span>
+                            <a href="/modificar_envases/{{ c.id }}/sumar" class="btn btn-outline-success btn-sm">+</a>
+                        </div>
+                    </td>
+                    <td>{{ c.ultima_compra.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        <a href="/registrar_venta/{{ c.id }}" class="btn btn-sm btn-info text-white" title="Registrar pedido hoy">
+                            <i class="bi bi-cart-check"></i> Venta
+                        </a>
+                        <a href="/eliminar/{{ c.id }}" class="btn btn-sm btn-link text-danger" onclick="return confirm('¿Eliminar cliente?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
