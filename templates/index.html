@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reparto Agua Maipú</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .alerta-envase { color: red; font-weight: bold; }
+    </style>
+</head>
+<body class="container mt-4">
+    <h2 class="mb-4">Gestión de Reparto - Maipú</h2>
+    
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">Agregar Nuevo Cliente</h5>
+            <form action="/nuevo_cliente" method="POST" class="row g-3">
+                <div class="col-md-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre" required></div>
+                <div class="col-md-3"><input type="text" name="direccion" class="form-control" placeholder="Dirección" required></div>
+                <div class="col-md-3">
+                    <select name="sector" class="form-select">
+                        <option value="Ciudad Satélite">Ciudad Satélite</option>
+                        <option value="El Abrazo">El Abrazo</option>
+                        <option value="Los Héroes">Los Héroes</option>
+                        <option value="Rinconada">Rinconada</option>
+                        <option value="Centro Maipú">Centro Maipú</option>
+                    </select>
+                </div>
+                <div class="col-md-2"><input type="number" name="envases" class="form-control" placeholder="Envases prestados"></div>
+                <div class="col-md-1"><button type="submit" class="btn btn-success w-100">Añadir</button></div>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Cliente</th>
+                <th>Dirección / Sector</th>
+                <th>Envases Prestados</th>
+                <th>Última Compra</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td>{{ c.nombre }}</td>
+                <td>{{ c.direccion }} <br><small class="text-muted">{{ c.sector }}</small></td>
+                <td class="{{ 'alerta-envase' if c.envases_prestados > 0 else '' }}">
+                    {{ c.envases_prestados }}
+                </td>
+                <td>{{ c.ultima_compra.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    <a href="/registrar_venta/{{ c.id }}" class="btn btn-sm btn-primary">Registrar Pedido</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
