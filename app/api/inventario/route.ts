@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { db } from '@/lib/db'
+import { getBodegaCentralId } from '@/lib/bodegas'
 import type { ApiResponse, ApiListResponse, Inventario } from '@/lib/types'
 
 /**
@@ -97,9 +98,12 @@ export async function PATCH(request: NextRequest) {
     )
   }
 
-  // Verificar que el producto tiene registro de inventario
+  // El ajuste manual del admin aplica sobre la Bodega Central
+  const bodegaCentralId = await getBodegaCentralId()
+
+  // Verificar que el producto tiene registro de inventario en la central
   const inventarioExistente = await db.inventario.findUnique({
-    where: { producto_id: body.producto_id },
+    where: { producto_id_bodega_id: { producto_id: body.producto_id, bodega_id: bodegaCentralId } },
     select: { id: true },
   })
 
@@ -117,7 +121,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const updated = await db.inventario.update({
-      where: { producto_id: body.producto_id },
+      where: { id: inventarioExistente.id },
       data: actualizacion,
     })
 

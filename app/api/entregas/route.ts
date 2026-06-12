@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { db } from '@/lib/db'
+import { getBodegaCentralId } from '@/lib/bodegas'
 import type { ApiResponse, ApiListResponse, Entrega } from '@/lib/types'
 
 /**
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
   // Verificar que el pedido existe y no está ya entregado o cancelado
   const pedido = await db.pedido.findUnique({
     where: { id: body.pedido_id },
-    select: { id: true, estado: true },
+    select: { id: true, estado: true, bodega_id: true, stock_descontado: true },
   })
 
   if (!pedido) {
@@ -176,6 +177,11 @@ export async function POST(request: NextRequest) {
     choferIdFinal = chofer.id
   }
 
+  // Bodega desde la que se descuenta: la del pedido (turno) o la central por defecto
+  const bodegaCentralId = await getBodegaCentralId()
+  const bodegaDescuento = pedido.bodega_id ?? bodegaCentralId
+  const yaDescontado = pedido.stock_descontado
+
   // Crear entrega, actualizar pedido y decrementar stock en una transacción
   try {
     const entregaCreada = await db.$transaction(async (tx) => {
@@ -193,29 +199,46 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      // Sumar los bidones vacíos recibidos a la bodega correspondiente
+      if ((body.bidones_vacios_recibidos ?? 0) > 0) {
+        const invVacios = await tx.inventario.findMany({
+          where: { bodega_id: bodegaDescuento },
+          select: { id: true, stock_vacios_bodega: true },
+          take: 1,
+          orderBy: { updated_at: 'asc' },
+        })
+        if (invVacios[0]) {
+          await tx.inventario.update({
+            where: { id: invVacios[0].id },
+            data: { stock_vacios_bodega: invVacios[0].stock_vacios_bodega + (body.bidones_vacios_recibidos ?? 0) },
+          })
+        }
+      }
+
       // Actualizar el estado del pedido a 'entregado'
       await tx.pedido.update({
         where: { id: body.pedido_id! },
-        data: { estado: 'entregado' },
+        data: { estado: 'entregado', stock_descontado: true },
       })
 
-      // Obtener los items del pedido para actualizar el stock
-      const pedidoItems = await tx.pedidoItem.findMany({
-        where: { pedido_id: body.pedido_id! },
-        select: { producto_id: true, cantidad: true },
-      })
-
-      // Decrementar el stock de bodega para cada producto (sin llegar a negativo)
-      for (const item of pedidoItems) {
-        const inv = await tx.inventario.findUnique({
-          where: { producto_id: item.producto_id },
-          select: { id: true, stock_bodega: true },
+      // Decrementar stock solo si aún no se había descontado (al asignar o en venta terreno)
+      if (!yaDescontado) {
+        const pedidoItems = await tx.pedidoItem.findMany({
+          where: { pedido_id: body.pedido_id! },
+          select: { producto_id: true, cantidad: true },
         })
-        if (inv) {
-          await tx.inventario.update({
-            where: { id: inv.id },
-            data: { stock_bodega: Math.max(0, inv.stock_bodega - item.cantidad) },
+
+        for (const item of pedidoItems) {
+          const inv = await tx.inventario.findUnique({
+            where: { producto_id_bodega_id: { producto_id: item.producto_id, bodega_id: bodegaDescuento } },
+            select: { id: true, stock_bodega: true },
           })
+          if (inv) {
+            await tx.inventario.update({
+              where: { id: inv.id },
+              data: { stock_bodega: Math.max(0, inv.stock_bodega - item.cantidad) },
+            })
+          }
         }
       }
 

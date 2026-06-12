@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { EntregaItem } from '@/components/chofer/EntregaItem'
+import { TurnoBanner } from '@/components/chofer/TurnoBanner'
 import { formatFecha } from '@/lib/utils'
 import type { Pedido, Cliente, PedidoItem, Producto } from '@/lib/types'
 
@@ -37,6 +38,47 @@ export default async function ChoferPage() {
       </div>
     )
   }
+
+  // Turno activo del chofer (con su camioneta/bodega)
+  const turnoActivo = await db.turno.findFirst({
+    where: { chofer_id: chofer.id, estado: 'activo' },
+    orderBy: { fecha_inicio: 'desc' },
+    include: { bodega: true },
+  })
+
+  // Camionetas disponibles para iniciar turno (móviles activas sin turno activo)
+  const camionetasRaw = await db.bodega.findMany({
+    where: {
+      tipo: 'movil',
+      activo: true,
+      turnos: { none: { estado: 'activo' } },
+    },
+    orderBy: { nombre: 'asc' },
+    select: { id: true, nombre: true, patente: true },
+  })
+
+  // Stock actual de la camioneta del turno (para "Mi stock" y el cierre)
+  const stockTurno = turnoActivo
+    ? await db.inventario.findMany({
+        where: { bodega_id: turnoActivo.bodega_id },
+        include: { producto: { select: { nombre: true } } },
+        orderBy: { updated_at: 'desc' },
+      })
+    : []
+
+  const turnoBanner = turnoActivo
+    ? {
+        id: turnoActivo.id,
+        bodega_nombre: turnoActivo.bodega.nombre,
+        fecha_inicio: turnoActivo.fecha_inicio.toISOString(),
+      }
+    : null
+
+  const stockBanner = stockTurno.map((s) => ({
+    producto_id: s.producto_id,
+    nombre: s.producto?.nombre ?? '—',
+    stock_bodega: s.stock_bodega,
+  }))
 
   const hoy = new Date()
   const inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
@@ -79,6 +121,9 @@ export default async function ChoferPage() {
         <h1 className="font-nunito font-extrabold text-2xl text-gray-900">Mis Entregas</h1>
         <p className="font-outfit text-base text-gray-500">{fechaHoy}</p>
       </div>
+
+      {/* Banner de turno: iniciar / activo + venta en terreno + cerrar */}
+      <TurnoBanner turno={turnoBanner} camionetas={camionetasRaw} stock={stockBanner} />
 
       {/* Contador + acceso a inventario */}
       <div className="flex items-center justify-between">

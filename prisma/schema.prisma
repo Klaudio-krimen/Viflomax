@@ -90,10 +90,11 @@ model Producto {
   categoria         String // 'envase' | 'recarga' | 'dispensador' | 'accesorio'
   precio_base       Decimal?          @db.Decimal(10, 2)
   activo            Boolean           @default(true)
-  inventario        Inventario?
+  inventario        Inventario[]
   pedido_items      PedidoItem[]
   precios_mayorista PrecioMayorista[]
   precios_detalle   PrecioDetalle[]
+  transferencias    TransferenciaStock[]
 }
 
 model Cliente {
@@ -123,24 +124,31 @@ model Chofer {
   user     User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
   pedidos  Pedido[]
   entregas Entrega[]
+  turnos   Turno[]
 }
 
 model Pedido {
   id                       String       @id @default(uuid())
   numero_pedido            String?      @unique
   cliente_id               String?
+  cliente_nombre           String? // nombre libre para venta en terreno a cliente no registrado
   empresa_id               String?
   chofer_id                String?
+  turno_id                 String?
+  bodega_id                String? // bodega desde la que se descuenta el stock
   fecha_pedido             DateTime     @default(now())
   fecha_entrega_programada DateTime?    @db.Date
   estado                   String       @default("nuevo") // 'nuevo'|'confirmado'|'en_ruta'|'entregado'|'cancelado'
-  origen                   String       @default("manual") // 'web'|'whatsapp'|'telefono'|'manual'
+  origen                   String       @default("manual") // 'web'|'whatsapp'|'telefono'|'manual'|'terreno'
   monto_total              Decimal?     @db.Decimal(10, 2)
+  stock_descontado         Boolean      @default(false)
   notas                    String?
   created_at               DateTime     @default(now())
   cliente                  Cliente?     @relation(fields: [cliente_id], references: [id], onDelete: SetNull)
   empresa                  Empresa?     @relation(fields: [empresa_id], references: [id], onDelete: SetNull)
   chofer                   Chofer?      @relation(fields: [chofer_id], references: [id], onDelete: SetNull)
+  turno                    Turno?       @relation(fields: [turno_id], references: [id], onDelete: SetNull)
+  bodega                   Bodega?      @relation(fields: [bodega_id], references: [id], onDelete: SetNull)
   items                    PedidoItem[]
   entrega                  Entrega?
 }
@@ -175,13 +183,66 @@ model Entrega {
 
 model Inventario {
   id                  String   @id @default(uuid())
-  producto_id         String   @unique
+  producto_id         String
+  bodega_id           String
   stock_bodega        Int      @default(0)
   stock_vacios_bodega Int      @default(0)
   stock_en_ruta       Int      @default(0)
   stock_minimo_alerta Int      @default(5)
   updated_at          DateTime @updatedAt
   producto            Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  bodega              Bodega   @relation(fields: [bodega_id], references: [id], onDelete: Cascade)
+
+  @@unique([producto_id, bodega_id])
+}
+
+// ============================================================
+// BODEGAS, TURNOS Y TRANSFERENCIAS DE STOCK
+// ============================================================
+
+model Bodega {
+  id                     String               @id @default(uuid())
+  nombre                 String
+  tipo                   String               @default("central") // 'central' | 'movil'
+  patente                String? // para camionetas (bodega móvil)
+  activo                 Boolean              @default(true)
+  created_at             DateTime             @default(now())
+  inventario             Inventario[]
+  turnos                 Turno[]
+  pedidos                Pedido[]
+  transferencias_origen  TransferenciaStock[] @relation("BodegaOrigen")
+  transferencias_destino TransferenciaStock[] @relation("BodegaDestino")
+}
+
+model Turno {
+  id               String               @id @default(uuid())
+  chofer_id        String
+  bodega_id        String
+  fecha_inicio     DateTime             @default(now())
+  fecha_fin        DateTime?
+  estado           String               @default("activo") // 'activo' | 'cerrado'
+  efectivo_rendido Decimal?             @db.Decimal(10, 2)
+  notas_cierre     String?
+  chofer           Chofer               @relation(fields: [chofer_id], references: [id], onDelete: Cascade)
+  bodega           Bodega               @relation(fields: [bodega_id], references: [id])
+  pedidos          Pedido[]
+  transferencias   TransferenciaStock[]
+}
+
+model TransferenciaStock {
+  id                String   @id @default(uuid())
+  bodega_origen_id  String?
+  bodega_destino_id String?
+  producto_id       String
+  cantidad          Int
+  tipo              String // 'carga' | 'devolucion' | 'ajuste'
+  turno_id          String?
+  notas             String?
+  created_at        DateTime @default(now())
+  bodega_origen     Bodega?  @relation("BodegaOrigen", fields: [bodega_origen_id], references: [id], onDelete: SetNull)
+  bodega_destino    Bodega?  @relation("BodegaDestino", fields: [bodega_destino_id], references: [id], onDelete: SetNull)
+  producto          Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  turno             Turno?   @relation(fields: [turno_id], references: [id], onDelete: SetNull)
 }
 
 model PrecioMayorista {

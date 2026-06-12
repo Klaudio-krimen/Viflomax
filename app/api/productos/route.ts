@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { db } from '@/lib/db'
+import { getBodegaCentralId } from '@/lib/bodegas'
 import type { ApiResponse } from '@/lib/types'
 
 /**
@@ -95,6 +96,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const bodegaCentralId = await getBodegaCentralId()
+
     const resultado = await db.$transaction(async (tx) => {
       const producto = await tx.producto.create({
         data: {
@@ -109,6 +112,7 @@ export async function POST(request: NextRequest) {
       const inventario = await tx.inventario.create({
         data: {
           producto_id: producto.id,
+          bodega_id: bodegaCentralId,
           stock_bodega: body.stock_bodega ?? 0,
           stock_vacios_bodega: 0,
           stock_en_ruta: 0,

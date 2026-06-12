@@ -109,7 +109,7 @@ export type EstadoPedido = 'nuevo' | 'confirmado' | 'en_ruta' | 'entregado' | 'c
 /**
  * Origen del pedido (cómo fue creado)
  */
-export type OrigenPedido = 'web' | 'whatsapp' | 'telefono' | 'manual'
+export type OrigenPedido = 'web' | 'whatsapp' | 'telefono' | 'manual' | 'terreno'
 
 /**
  * Pedido
@@ -118,13 +118,17 @@ export type Pedido = {
   id: string
   numero_pedido: string | null
   cliente_id: string | null
+  cliente_nombre: string | null
   empresa_id: string | null
   chofer_id: string | null
+  turno_id: string | null
+  bodega_id: string | null
   fecha_pedido: string
   fecha_entrega_programada: string | null
   estado: EstadoPedido
   origen: OrigenPedido
   monto_total: number | null
+  stock_descontado: boolean
   notas: string | null
   created_at: string
 }
@@ -170,11 +174,53 @@ export type Entrega = {
 }
 
 /**
- * Inventario de productos
+ * Bodega — central (fija) o móvil (camioneta de un chofer)
+ */
+export type Bodega = {
+  id: string
+  nombre: string
+  tipo: 'central' | 'movil'
+  patente: string | null
+  activo: boolean
+  created_at: string
+}
+
+/**
+ * Turno — un chofer sale con una camioneta (bodega móvil) específica
+ */
+export type Turno = {
+  id: string
+  chofer_id: string
+  bodega_id: string
+  fecha_inicio: string
+  fecha_fin: string | null
+  estado: 'activo' | 'cerrado'
+  efectivo_rendido: number | null
+  notas_cierre: string | null
+}
+
+/**
+ * Transferencia de stock entre bodegas (carga, devolución, ajuste)
+ */
+export type TransferenciaStock = {
+  id: string
+  bodega_origen_id: string | null
+  bodega_destino_id: string | null
+  producto_id: string
+  cantidad: number
+  tipo: 'carga' | 'devolucion' | 'ajuste'
+  turno_id: string | null
+  notas: string | null
+  created_at: string
+}
+
+/**
+ * Inventario de productos (uno por producto y bodega)
  */
 export type Inventario = {
   id: string
   producto_id: string
+  bodega_id: string
   stock_bodega: number
   stock_vacios_bodega: number
   stock_en_ruta: number

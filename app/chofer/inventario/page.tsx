@@ -1,10 +1,12 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import type { Inventario, Producto } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = { title: 'Inventario — Viflomax Chofer' }
+export const metadata = { title: 'Mi Stock — Viflomax Chofer' }
 
 type InventarioConProducto = Inventario & {
   producto: Pick<Producto, 'id' | 'nombre' | 'categoria'> | null
@@ -33,15 +35,37 @@ function AlertaStock({ stock, minimo }: { stock: number; minimo: number }) {
 }
 
 export default async function InventarioChoferPage() {
-  const inventario = await db.inventario.findMany({
-    orderBy: { updated_at: 'desc' },
-    include: { producto: { select: { id: true, nombre: true, categoria: true } } },
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+
+  const chofer = await db.chofer.findUnique({
+    where: { user_id: session.user.id },
+    select: { id: true },
   })
+
+  // Turno activo → stock de su camioneta
+  const turnoActivo = chofer
+    ? await db.turno.findFirst({
+        where: { chofer_id: chofer.id, estado: 'activo' },
+        orderBy: { fecha_inicio: 'desc' },
+        include: { bodega: true },
+      })
+    : null
+
+  const inventario = turnoActivo
+    ? await db.inventario.findMany({
+        where: { bodega_id: turnoActivo.bodega_id },
+        orderBy: { updated_at: 'desc' },
+        include: { producto: { select: { id: true, nombre: true, categoria: true } } },
+      })
+    : []
 
   const inventarioList = inventario.map((i) => ({
     ...i,
     updated_at: i.updated_at.toISOString(),
   })) as unknown as InventarioConProducto[]
+
+  const nombreCamioneta = turnoActivo?.bodega.nombre ?? null
 
   return (
     <div className="space-y-4">
@@ -65,14 +89,23 @@ export default async function InventarioChoferPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="font-nunito font-extrabold text-xl text-gray-900">Inventario</h1>
-          <p className="font-outfit text-sm text-gray-500">Stock actual de productos</p>
+          <h1 className="font-nunito font-extrabold text-xl text-gray-900">Mi Stock</h1>
+          <p className="font-outfit text-sm text-gray-500">
+            {nombreCamioneta ? nombreCamioneta : 'Stock de tu camioneta'}
+          </p>
         </div>
       </div>
 
-      {inventarioList.length === 0 ? (
+      {!turnoActivo ? (
+        <div className="py-12 text-center space-y-2">
+          <p className="font-outfit text-gray-600 font-medium">No tienes un turno activo</p>
+          <p className="font-outfit text-gray-400 text-sm">Inicia tu turno desde la pantalla principal para ver el stock de tu camioneta.</p>
+          <Link href="/chofer" className="inline-block mt-2 text-sm font-outfit font-semibold text-viflomax-azul-oscuro">← Volver</Link>
+        </div>
+      ) : inventarioList.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="font-outfit text-gray-500">No hay datos de inventario disponibles.</p>
+          <p className="font-outfit text-gray-500">Tu camioneta no tiene stock cargado.</p>
+          <p className="font-outfit text-gray-400 text-sm mt-1">Pide al administrador que cargue productos a tu camioneta.</p>
         </div>
       ) : (
         <div className="space-y-3">
