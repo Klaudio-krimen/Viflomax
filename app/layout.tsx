@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Nunito, Outfit } from 'next/font/google'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import './globals.css'
@@ -28,6 +28,12 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#1a6ba0',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

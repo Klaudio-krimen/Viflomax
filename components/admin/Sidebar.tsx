@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -91,18 +92,23 @@ type SidebarProps = {
 
 export function Sidebar({ userEmail }: SidebarProps) {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+
+  // Cerrar el menú al navegar (en móvil)
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/login' })
   }
 
-  return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
+  const navContent = (
+    <>
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-100">
         <h1 className="font-nunito font-extrabold text-xl text-viflomax-azul-oscuro leading-tight">
-          Agua{' '}
-          <span className="text-viflomax-verde">Viflomax</span>
+          Agua <span className="text-viflomax-verde">Viflomax</span>
         </h1>
         <p className="text-xs text-gray-500 font-outfit mt-0.5">Panel de Administración</p>
       </div>
@@ -115,11 +121,10 @@ export function Sidebar({ userEmail }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setOpen(false)}
               className={[
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-outfit font-medium transition-colors',
-                isActive
-                  ? 'bg-viflomax-verde text-white'
-                  : 'text-gray-700 hover:bg-gray-100',
+                isActive ? 'bg-viflomax-verde text-white' : 'text-gray-700 hover:bg-gray-100',
               ].join(' ')}
               aria-current={isActive ? 'page' : undefined}
             >
@@ -148,6 +153,53 @@ export function Sidebar({ userEmail }: SidebarProps) {
           Cerrar Sesión
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Barra superior móvil (< md) */}
+      <header className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-200 flex items-center justify-between px-4 h-14">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="p-2 -ml-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span className="font-nunito font-extrabold text-lg text-viflomax-azul-oscuro">
+          Agua <span className="text-viflomax-verde">Viflomax</span>
+        </span>
+        <span className="w-8" aria-hidden="true" />
+      </header>
+
+      {/* Overlay del drawer móvil */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer móvil (off-canvas) */}
+      <aside
+        className={[
+          'md:hidden fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200 flex flex-col',
+          'transition-transform duration-200 ease-out',
+          open ? 'translate-x-0' : '-translate-x-full',
+        ].join(' ')}
+      >
+        {navContent}
+      </aside>
+
+      {/* Sidebar fijo en escritorio (md+) */}
+      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col h-full shrink-0">
+        {navContent}
+      </aside>
+    </>
   )
 }
