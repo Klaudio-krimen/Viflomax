@@ -37,6 +37,15 @@ export const authOptions: NextAuthOptions = {
         const passwordOk = await bcrypt.compare(credentials.password, user.password)
         if (!passwordOk) return null
 
+        // Chofer desactivado (desvinculado) no puede iniciar sesión
+        if (user.role === 'chofer') {
+          const chofer = await db.chofer.findUnique({
+            where: { user_id: user.id },
+            select: { activo: true },
+          })
+          if (chofer && !chofer.activo) return null
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -54,6 +63,18 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as { role?: string }).role ?? 'publico'
         token.id = user.id
       }
+
+      // Re-verificar en cada request si un chofer con sesión ya abierta fue
+      // desactivado mientras tanto — así una desvinculación corta el acceso
+      // de inmediato, no solo bloquea logins nuevos.
+      if (token.role === 'chofer' && token.id) {
+        const chofer = await db.chofer.findUnique({
+          where: { user_id: token.id as string },
+          select: { activo: true },
+        })
+        token.choferActivo = chofer?.activo ?? false
+      }
+
       return token
     },
 
@@ -62,6 +83,9 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        if (token.role === 'chofer') {
+          session.user.choferActivo = token.choferActivo as boolean
+        }
       }
       return session
     },

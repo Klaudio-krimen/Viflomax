@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -11,6 +12,15 @@ type ProductoOpcion = { id: string; nombre: string; categoria: string; precio_ba
 
 export default function NuevoPedidoPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+
+  // El rol 'visor' es de solo lectura — el middleware ya bloquea esta ruta,
+  // esto es una capa extra por si se navega client-side.
+  useEffect(() => {
+    if (session?.user?.role === 'visor') {
+      router.replace('/admin/pedidos')
+    }
+  }, [session, router])
 
   const [clientes, setClientes] = useState<Opcion[]>([])
   const [choferes, setChoferes] = useState<Opcion[]>([])

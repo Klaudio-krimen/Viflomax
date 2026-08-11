@@ -54,6 +54,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
           <div className="text-white/50 text-xs text-center md:text-right">
             <p>© {new Date().getFullYear()} Agua Viflomax. Todos los derechos reservados.</p>
+            <Link href="/login" className="text-white/40 hover:text-white/70 transition-colors">
+              Acceso Staff
+            </Link>
           </div>
         </div>
       </footer>

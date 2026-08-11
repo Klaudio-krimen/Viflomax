@@ -102,6 +102,19 @@ export async function eliminarChofer(id: string): Promise<ActionResult> {
     })
     if (!chofer) return { error: 'Chofer no encontrado' }
 
+    // No permitir borrar historial de negocio: si el chofer ya tiene entregas
+    // o turnos registrados, solo se puede desactivar (desvincular), no eliminar.
+    const [entregas, turnos] = await Promise.all([
+      db.entrega.count({ where: { chofer_id: id } }),
+      db.turno.count({ where: { chofer_id: id } }),
+    ])
+    if (entregas > 0 || turnos > 0) {
+      return {
+        error:
+          'Este chofer tiene entregas o turnos registrados. Desactívalo en vez de eliminarlo.',
+      }
+    }
+
     await db.$transaction(async (tx) => {
       await tx.chofer.delete({ where: { id } })
       if (chofer.user_id) {

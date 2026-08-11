@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
 import { Badge, estadoPedidoBadge } from '@/components/ui/Badge'
 import { EliminarPedidoButton } from '../EliminarPedidoButton'
 import { CambiarEstadoButton } from './CambiarEstadoButton'
@@ -37,6 +38,9 @@ const ESTADOS_SIGUIENTE: Record<string, { value: string; label: string }[]> = {
 }
 
 export default async function PedidoDetallePage({ params }: { params: { id: string } }) {
+  const session = await auth()
+  const esVisor = session?.user?.role === 'visor'
+
   const pedido = await db.pedido.findUnique({
     where: { id: params.id },
     include: {
@@ -84,7 +88,7 @@ export default async function PedidoDetallePage({ params }: { params: { id: stri
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
-          <EliminarPedidoButton id={pedido.id} numero={pedido.numero_pedido} />
+          {!esVisor && <EliminarPedidoButton id={pedido.id} numero={pedido.numero_pedido} />}
         </div>
       </div>
 
@@ -138,45 +142,54 @@ export default async function PedidoDetallePage({ params }: { params: { id: stri
             Chofer y Estado
           </h3>
 
-          {/* Asignar chofer */}
-          <form action={`/api/pedidos/${pedido.id}`} method="POST" className="space-y-2">
-            <label className="text-xs font-outfit font-medium text-gray-600 uppercase tracking-wider">
-              Chofer asignado
-            </label>
-            <div className="flex gap-2">
-              <select
-                name="chofer_id"
-                defaultValue={pedido.chofer_id ?? ''}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-outfit text-gray-900 focus:outline-none focus:ring-2 focus:ring-viflomax-azul"
-              >
-                <option value="">Sin chofer</option>
-                {choferes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-gray-400 font-outfit">
-              Actualmente: {pedido.chofer?.nombre ?? 'Sin asignar'}
+          {esVisor ? (
+            <p className="text-sm font-outfit text-gray-700">
+              <span className="text-gray-500 block text-xs uppercase tracking-wider mb-1">Chofer asignado</span>
+              {pedido.chofer?.nombre ?? 'Sin asignar'}
             </p>
-          </form>
+          ) : (
+            <>
+              {/* Asignar chofer */}
+              <form action={`/api/pedidos/${pedido.id}`} method="POST" className="space-y-2">
+                <label className="text-xs font-outfit font-medium text-gray-600 uppercase tracking-wider">
+                  Chofer asignado
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    name="chofer_id"
+                    defaultValue={pedido.chofer_id ?? ''}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-outfit text-gray-900 focus:outline-none focus:ring-2 focus:ring-viflomax-azul"
+                  >
+                    <option value="">Sin chofer</option>
+                    {choferes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-xs text-gray-400 font-outfit">
+                  Actualmente: {pedido.chofer?.nombre ?? 'Sin asignar'}
+                </p>
+              </form>
 
-          {/* Cambio de estado */}
-          {siguientesEstados.length > 0 && (
-            <div className="space-y-2">
-              <label className="text-xs font-outfit font-medium text-gray-600 uppercase tracking-wider">
-                Cambiar estado
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {siguientesEstados.map((s) => (
-                  <CambiarEstadoButton
-                    key={s.value}
-                    pedidoId={pedido.id}
-                    estado={s.value}
-                    label={s.label}
-                  />
-                ))}
-              </div>
-            </div>
+              {/* Cambio de estado */}
+              {siguientesEstados.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs font-outfit font-medium text-gray-600 uppercase tracking-wider">
+                    Cambiar estado
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {siguientesEstados.map((s) => (
+                      <CambiarEstadoButton
+                        key={s.value}
+                        pedidoId={pedido.id}
+                        estado={s.value}
+                        label={s.label}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

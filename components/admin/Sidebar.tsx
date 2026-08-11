@@ -84,15 +84,32 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  {
+    href: '/admin/usuarios',
+    label: 'Usuarios',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
 ]
+
+// Únicos ítems visibles para el rol 'visor' — solo lectura de pedidos
+const VISOR_HREFS = ['/admin/pedidos']
 
 type SidebarProps = {
   userEmail?: string | null
+  role?: string
 }
 
-export function Sidebar({ userEmail }: SidebarProps) {
+export function Sidebar({ userEmail, role }: SidebarProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const isVisor = role === 'visor'
+  const itemsVisibles = isVisor
+    ? navItems.filter((item) => VISOR_HREFS.includes(item.href))
+    : navItems
 
   // Cerrar el menú al navegar (en móvil)
   useEffect(() => {
@@ -110,12 +127,14 @@ export function Sidebar({ userEmail }: SidebarProps) {
         <h1 className="font-nunito font-extrabold text-xl text-viflomax-azul-oscuro leading-tight">
           Agua <span className="text-viflomax-verde">Viflomax</span>
         </h1>
-        <p className="text-xs text-gray-500 font-outfit mt-0.5">Panel de Administración</p>
+        <p className="text-xs text-gray-500 font-outfit mt-0.5">
+          {isVisor ? 'Panel de Pedidos' : 'Panel de Administración'}
+        </p>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Navegación principal">
-        {navItems.map((item) => {
+        {itemsVisibles.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
           return (
             <Link

@@ -1,0 +1,66 @@
+{
+  "projectId": "4153089219629023253",
+  "title": "Remix of Fleet Admin Dashboard",
+  "register": "fleet-ops-admin",
+  "relatedTo": "viflomax",
+  "note": "Registro admin/ops separado del DESIGN.md raiz de Viflomax (PWA de choferes). Ver .stitch/DESIGN.md seccion 0.",
+  "screens": [
+    {
+      "screenId": "e3b5be73965b4691a3a354599bb884ee",
+      "title": "Fleet Admin Dashboard",
+      "deviceType": "DESKTOP"
+    },
+    {
+      "screenId": "e2cd07be9cb84332b5e9da549711a847",
+      "title": "Vibrant Fleet Dashboard",
+      "deviceType": "DESKTOP"
+    },
+    {
+      "screenId": "860bfb9641ea447c9c01685b3048d1f7",
+      "title": "Driver Management Dashboard",
+      "deviceType": "DESKTOP"
+    },
+    {
+      "screenId": "1d43945344c74c4287dab9fad07e030f",
+      "title": "Fleet Status Dashboard",
+      "deviceType": "DESKTOP"
+    },
+    {
+      "screenId": "a9455064644a4458bf6ecd0fcaeb6c68",
+      "title": "Fleet Routes Management",
+      "deviceType": "DESKTOP"
+    },
+    {
+      "screenId": "b73f5dd940b044d5bc666072100a6647",
+      "title": "Fleet Analytics Dashboard",
+      "deviceType": "DESKTOP"
+    }
+  ],
+  "duplicateScreensPendingCleanup": {
+    "note": "Los dos intentos previos de generacion (que parecian fallar por timeout del lado del cliente) en realidad completaron en el servidor, creando duplicados. El design system ya fue aplicado a estos tambien. Bórralos manualmente en stitch.withgoogle.com si no los necesitas -- el MCP de Stitch no expone una funcion para eliminar pantallas.",
+    "screens": [
+      { "screenId": "6f321fc1ea2849ad9913c5c1887bef8c", "title": "Driver Management Dashboard (duplicado)" },
+      { "screenId": "8ab7ab4328374404ab6829640ecf2a83", "title": "Fleet Status Dashboard (duplicado)" },
+      { "screenId": "92048548368c4b70800bfe79706a7a61", "title": "Fleet Routes Management (duplicado)" }
+    ]
+  },
+  "strayDesignSystemAssets": {
+    "note": "Los mismos intentos previos tambien crearon 2 design systems espurios en el proyecto (no usados, no aplicados a ninguna pantalla actual). El design system correcto sigue siendo 'Azul Profundo Control' (ecf5cb4d26fc417e89b45934c37844d1).",
+    "assets": [
+      { "assetId": "02adbc101a024114a6b1436b637de69a", "displayName": "Apex Cobalt" },
+      { "assetId": "6c5d348e5ada419c9cb26c5f7779c3c1", "displayName": "Apex Grid" }
+    ]
+  },
+  "designSystem": {
+    "assetId": "ecf5cb4d26fc417e89b45934c37844d1",
+    "displayName": "Azul Profundo Control",
+    "primaryColor": "#002f6c",
+    "secondaryColor": "#006d43",
+    "tertiaryColor": "#fbbc00",
+    "errorColor": "#ba1a1a",
+    "backgroundColor": "#fbf9f8",
+    "headlineFontFamily": "Manrope",
+    "bodyFontFamily": "Inter",
+    "roundness": "ROUND_EIGHT"
+  }
+}

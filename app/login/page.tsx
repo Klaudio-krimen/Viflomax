@@ -35,6 +35,8 @@ export default function LoginPage() {
 
       if (rol === 'admin') {
         router.push('/admin/dashboard')
+      } else if (rol === 'visor') {
+        router.push('/admin/pedidos')
       } else if (rol === 'chofer') {
         router.push('/chofer')
       } else {

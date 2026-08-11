@@ -13,6 +13,7 @@ import type {
  * GET /api/pedidos
  * Lista de pedidos.
  * - Admin: todos los pedidos
+ * - Visor: todos los pedidos (solo lectura, sin acceso a POST/PATCH/DELETE)
  * - Chofer: solo los pedidos asignados a él
  * Filtros opcionales: ?estado=nuevo&fecha=2024-01-01
  */
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   const role = token.role as string
-  if (role !== 'admin' && role !== 'chofer') {
+  if (!['admin', 'visor', 'chofer'].includes(role)) {
     return NextResponse.json(
       { data: null, error: 'Sin permisos' } as ApiResponse<never>,
       { status: 403 }

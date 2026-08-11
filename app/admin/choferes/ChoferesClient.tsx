@@ -305,10 +305,22 @@ function EliminarChoferButton({
   chofer,
   onSuccess,
 }: {
-  chofer: Chofer
+  chofer: Chofer & { tieneHistorial: boolean }
   onSuccess: () => void
 }) {
   const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  if (chofer.tieneHistorial) {
+    return (
+      <span
+        title="Este chofer tiene entregas o turnos registrados. Desactívalo en vez de eliminarlo."
+        className="px-2.5 py-1 text-xs bg-gray-50 text-gray-400 rounded-lg font-medium font-outfit border border-gray-200 cursor-not-allowed select-none"
+      >
+        Eliminar
+      </span>
+    )
+  }
 
   function handleClick() {
     if (
@@ -317,9 +329,15 @@ function EliminarChoferButton({
       )
     )
       return
+    setError(null)
     startTransition(async () => {
-      await eliminarChofer(chofer.id)
-      onSuccess()
+      const result = await eliminarChofer(chofer.id)
+      if (result.error) {
+        setError(result.error)
+        window.alert(result.error)
+      } else {
+        onSuccess()
+      }
     })
   }
 
@@ -328,6 +346,7 @@ function EliminarChoferButton({
       type="button"
       onClick={handleClick}
       disabled={pending}
+      title={error ?? undefined}
       className="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium font-outfit border border-red-200 disabled:opacity-50"
     >
       {pending ? '…' : 'Eliminar'}
@@ -373,7 +392,11 @@ function ToggleActivoButton({
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export function ChoferesClient({ choferes }: { choferes: Chofer[] }) {
+export function ChoferesClient({
+  choferes,
+}: {
+  choferes: (Chofer & { tieneHistorial: boolean })[]
+}) {
   const router = useRouter()
 
   function onSuccess() {

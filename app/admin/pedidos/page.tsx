@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
 import { Badge, estadoPedidoBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import type { PedidoConDetalle } from '@/lib/types'
@@ -40,6 +41,9 @@ export default async function PedidosPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
+  const session = await auth()
+  const esVisor = session?.user?.role === 'visor'
+
   const params = await searchParams
   const estado = params.estado ?? ''
   const fecha = params.fecha ?? ''
@@ -97,22 +101,24 @@ export default async function PedidosPage({
           <h2 className="font-nunito text-2xl font-extrabold text-gray-900">Pedidos</h2>
           <p className="text-sm font-outfit text-gray-500 mt-0.5">{total} pedidos encontrados</p>
         </div>
-        <Link href="/admin/pedidos/nuevo">
-          <Button variant="primary" size="sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Nuevo Pedido
-          </Button>
-        </Link>
+        {!esVisor && (
+          <Link href="/admin/pedidos/nuevo">
+            <Button variant="primary" size="sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuevo Pedido
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filtros */}
@@ -231,7 +237,9 @@ export default async function PedidosPage({
                           >
                             Ver
                           </Link>
-                          <EliminarPedidoButton id={pedido.id} numero={pedido.numero_pedido} />
+                          {!esVisor && (
+                            <EliminarPedidoButton id={pedido.id} numero={pedido.numero_pedido} />
+                          )}
                         </div>
                       </td>
                     </tr>

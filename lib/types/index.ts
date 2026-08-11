@@ -368,8 +368,9 @@ export type ClienteConEmpresa = Cliente & {
 
 /**
  * Roles de usuario en el sistema
+ * 'visor': acceso de solo lectura a pedidos (sin gestión de choferes/inventario/etc.)
  */
-export type RolUsuario = 'admin' | 'chofer' | 'publico'
+export type RolUsuario = 'admin' | 'chofer' | 'publico' | 'visor'
 
 /**
  * Usuario en sesión

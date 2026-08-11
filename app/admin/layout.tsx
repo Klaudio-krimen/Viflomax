@@ -9,13 +9,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/login')
   }
 
-  if (session.user.role !== 'admin') {
+  if (!['admin', 'visor'].includes(session.user.role)) {
     redirect('/login')
   }
 
   return (
     <div className="flex flex-col md:flex-row h-screen md:overflow-hidden bg-gray-50">
-      <Sidebar userEmail={session.user.email} />
+      <Sidebar userEmail={session.user.email} role={session.user.role} />
       <main className="flex-1 overflow-auto">
         {children}
       </main>
