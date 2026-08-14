@@ -20,10 +20,16 @@ const COLOR_POR_FRESCURA: Record<'fresca' | 'vieja' | 'sin_senal', string> = {
   sin_senal: '#ef4444',
 }
 
+const ETIQUETA_FRESCURA: Record<'fresca' | 'vieja' | 'sin_senal', string> = {
+  fresca: 'Fresca',
+  vieja: 'Vieja',
+  sin_senal: 'Sin señal',
+}
+
 function crearIcono(color: string) {
   return L.divIcon({
     className: '',
-    html: `<span class="marcador-flota-pulso" style="background:${color}"></span>`,
+    html: `<span class="marcador-flota-pulso" style="background:${color}" aria-hidden="true"></span>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   })
@@ -52,6 +58,11 @@ export default function MapaFlota({ posiciones }: { posiciones: PosicionFlota[] 
           70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
           100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          .marcador-flota-pulso {
+            animation: none;
+          }
+        }
       `}</style>
       <MapContainer center={centro} zoom={12} style={{ height: '100%', width: '100%' }}>
         <TileLayer
@@ -70,7 +81,9 @@ export default function MapaFlota({ posiciones }: { posiciones: PosicionFlota[] 
                 <div>
                   <p className="font-semibold">{p.chofer_nombre}</p>
                   {p.bodega_patente && <p>{p.bodega_patente}</p>}
-                  <p>{new Date(p.registrado_en).toLocaleTimeString('es-CL')}</p>
+                  <p>
+                    Señal {ETIQUETA_FRESCURA[frescura]} · {new Date(p.registrado_en).toLocaleTimeString('es-CL')}
+                  </p>
                 </div>
               </Popup>
             </Marker>
