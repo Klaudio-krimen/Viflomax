@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { CerrarSesionBtn } from '@/components/chofer/CerrarSesionBtn'
+import UbicacionTracker from '@/components/chofer/UbicacionTracker'
 import Link from 'next/link'
 
 export default async function ChoferLayout({ children }: { children: React.ReactNode }) {
@@ -47,6 +48,8 @@ export default async function ChoferLayout({ children }: { children: React.React
 
       {/* Contenido principal */}
       <main className="max-w-lg mx-auto px-4 py-5">{children}</main>
+
+      <UbicacionTracker />
     </div>
   )
 }
