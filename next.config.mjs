@@ -1,7 +1,18 @@
 import withPWA from '@ducanh2912/next-pwa'
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Permissions-Policy', value: 'geolocation=(self)' },
+        ],
+      },
+    ]
+  },
+}
 
 export default withPWA({
   dest: 'public',
