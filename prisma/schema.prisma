@@ -228,6 +228,7 @@ model Turno {
   bodega           Bodega               @relation(fields: [bodega_id], references: [id])
   pedidos          Pedido[]
   transferencias   TransferenciaStock[]
+  ubicaciones      Ubicacion[]
 }
 
 model TransferenciaStock {
@@ -244,6 +245,19 @@ model TransferenciaStock {
   bodega_destino    Bodega?  @relation("BodegaDestino", fields: [bodega_destino_id], references: [id], onDelete: SetNull)
   producto          Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
   turno             Turno?   @relation(fields: [turno_id], references: [id], onDelete: SetNull)
+}
+
+model Ubicacion {
+  id            String   @id @default(uuid())
+  turno_id      String
+  latitud       Decimal  @db.Decimal(10, 7)
+  longitud      Decimal  @db.Decimal(10, 7)
+  precision_m   Float?
+  origen        String   @default("app")
+  registrado_en DateTime @default(now())
+  turno         Turno    @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+
+  @@index([turno_id, registrado_en])
 }
 
 model PrecioMayorista {
