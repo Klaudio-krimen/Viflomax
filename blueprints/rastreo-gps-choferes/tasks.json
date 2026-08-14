@@ -437,6 +437,6 @@
       "scripts/purgar-ubicaciones.mjs",
       "package.json"
     ],
-    "status": "pending"
+    "status": "done"
   }
 ]
