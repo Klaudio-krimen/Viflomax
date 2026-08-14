@@ -60,8 +60,27 @@ export function colorEstado(estado: string): string {
 // ============================================================================
 
 const DB_NAME = 'viflomax-chofer'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE_NAME = 'entregas_pendientes'
+const UBICACIONES_STORE_NAME = 'ubicaciones_pendientes'
+
+type DBLike = {
+  objectStoreNames: { contains(nombre: string): boolean }
+  createObjectStore(nombre: string, opciones?: object): unknown
+}
+
+/**
+ * Migración de esquema de IndexedDB, extraída de onupgradeneeded para poder
+ * probarla sin un entorno de navegador real.
+ */
+export function aplicarUpgradeIndexedDB(db: DBLike, oldVersion: number): void {
+  if (oldVersion < 1 && !db.objectStoreNames.contains(STORE_NAME)) {
+    db.createObjectStore(STORE_NAME, { keyPath: 'pedido_id' })
+  }
+  if (oldVersion < 2 && !db.objectStoreNames.contains(UBICACIONES_STORE_NAME)) {
+    db.createObjectStore(UBICACIONES_STORE_NAME, { autoIncrement: true })
+  }
+}
 
 async function abrirDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -69,9 +88,7 @@ async function abrirDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'pedido_id' })
-      }
+      aplicarUpgradeIndexedDB(db, event.oldVersion)
     }
 
     request.onsuccess = () => resolve(request.result)
@@ -188,4 +205,96 @@ export async function sincronizarEntregas(): Promise<{
   }
 
   return { sincronizadas, errores }
+}
+
+/**
+ * Ping de ubicación encolado offline. `precision_m` puede ser null cuando el
+ * navegador no lo reporta.
+ */
+export type UbicacionPendienteOffline = {
+  latitud: number
+  longitud: number
+  precision_m: number | null
+}
+
+/**
+ * Guardar un ping de ubicación offline en IndexedDB
+ */
+export async function guardarUbicacionOffline(
+  ubicacion: UbicacionPendienteOffline
+): Promise<void> {
+  const db = await abrirDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(UBICACIONES_STORE_NAME, 'readwrite')
+    const store = tx.objectStore(UBICACIONES_STORE_NAME)
+    const request = store.add(ubicacion)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+    tx.oncomplete = () => db.close()
+  })
+}
+
+/**
+ * Obtener todos los pings de ubicación pendientes de IndexedDB
+ */
+export async function obtenerUbicacionesPendientes(): Promise<
+  UbicacionPendienteOffline[]
+> {
+  const db = await abrirDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(UBICACIONES_STORE_NAME, 'readonly')
+    const store = tx.objectStore(UBICACIONES_STORE_NAME)
+    const request = store.getAll()
+    request.onsuccess = () => resolve(request.result as UbicacionPendienteOffline[])
+    request.onerror = () => reject(request.error)
+    tx.oncomplete = () => db.close()
+  })
+}
+
+async function vaciarUbicacionesPendientes(): Promise<void> {
+  const db = await abrirDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(UBICACIONES_STORE_NAME, 'readwrite')
+    const store = tx.objectStore(UBICACIONES_STORE_NAME)
+    const request = store.clear()
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+    tx.oncomplete = () => db.close()
+  })
+}
+
+/**
+ * Sincronizar todos los pings de ubicación pendientes con el servidor en un
+ * solo POST /api/ubicaciones (el endpoint acepta un lote completo).
+ */
+export async function sincronizarUbicaciones(): Promise<{
+  sincronizadas: number
+  errores: number
+}> {
+  let pendientes: UbicacionPendienteOffline[]
+  try {
+    pendientes = await obtenerUbicacionesPendientes()
+  } catch {
+    return { sincronizadas: 0, errores: 0 }
+  }
+
+  if (pendientes.length === 0) {
+    return { sincronizadas: 0, errores: 0 }
+  }
+
+  try {
+    const res = await fetch('/api/ubicaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pendientes),
+    })
+
+    if (res.ok) {
+      await vaciarUbicacionesPendientes()
+      return { sincronizadas: pendientes.length, errores: 0 }
+    }
+    return { sincronizadas: 0, errores: pendientes.length }
+  } catch {
+    return { sincronizadas: 0, errores: pendientes.length }
+  }
 }
