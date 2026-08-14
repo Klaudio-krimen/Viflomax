@@ -1,0 +1,442 @@
+[
+  {
+    "id": "E1-T1",
+    "title": "Regularizar la deriva de migraciones con un baseline",
+    "epic": "01-cimientos-e-ingesta",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO `npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code` corre antes de crear la migración baseline EL SISTEMA DEBERÁ salir con código 0, probando que la base viva ya coincide con `prisma/schema.prisma`.",
+      "CUANDO `npx prisma migrate status` corre después del baseline EL SISTEMA DEBERÁ salir con código 0 y no reportar migraciones pendientes ni deriva.",
+      "CUANDO se inspecciona el SQL de la migración baseline EL SISTEMA DEBERÁ contener las sentencias `CREATE TABLE` de `Bodega`, `Turno` y `TransferenciaStock`, que hasta ahora no tenían migración.",
+      "CUANDO `npm run build` corre al final del paso EL SISTEMA DEBERÁ salir con código 0."
+    ],
+    "verify": [
+      "npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code",
+      "npx prisma migrate status",
+      "npm run build"
+    ],
+    "checkpoint": "step-01-baseline-migraciones",
+    "files": [
+      "prisma/migrations/**"
+    ],
+    "status": "done"
+  },
+  {
+    "id": "E1-T2",
+    "title": "Agregar el modelo Ubicacion y su migración",
+    "epic": "01-cimientos-e-ingesta",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO `npx prisma validate` corre EL SISTEMA DEBERÁ salir con código 0 con el modelo `Ubicacion` declarado y la relación `ubicaciones Ubicacion[]` presente en `Turno`.",
+      "CUANDO se lee el modelo `Ubicacion` EL SISTEMA DEBERÁ declarar `latitud` y `longitud` como `Decimal @db.Decimal(10, 7)`, igual que `Entrega`, y `registrado_en` como `DateTime @default(now())`.",
+      "CUANDO se lee el modelo `Ubicacion` EL SISTEMA DEBERÁ declarar `@@index([turno_id, registrado_en])` y `onDelete: Cascade` en la relación con `Turno`.",
+      "CUANDO `npx prisma migrate status` corre después de aplicar la migración EL SISTEMA DEBERÁ salir con código 0 y no reportar migraciones pendientes.",
+      "CUANDO `npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code` corre después de la migración EL SISTEMA DEBERÁ salir con código 0, probando cero deriva."
+    ],
+    "verify": [
+      "npx prisma validate",
+      "npx prisma migrate status",
+      "npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code",
+      "npm run build"
+    ],
+    "checkpoint": "step-02-modelo-ubicacion",
+    "files": [
+      "prisma/schema.prisma",
+      "prisma/migrations/**"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T3",
+    "title": "Crear lib/ubicaciones.ts con tres helpers puros",
+    "epic": "01-cimientos-e-ingesta",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO se importa `lib/ubicaciones.ts` EL SISTEMA DEBERÁ exportar `validarCoordenadas`, `minutosDesde` y `frescuraSenal`.",
+      "CUANDO `validarCoordenadas(lat, lng)` recibe un valor que no es `number`, o no es finito, o una latitud fuera de [-90, 90], o una longitud fuera de [-180, 180] EL SISTEMA DEBERÁ retornar `false`.",
+      "CUANDO `frescuraSenal(fecha, ahora)` recibe una fecha de hace menos de 5 minutos EL SISTEMA DEBERÁ retornar `'fresca'`; de menos de 20 minutos, `'vieja'`; en cualquier otro caso, `'sin_senal'`.",
+      "CUANDO se lee `lib/ubicaciones.ts` EL SISTEMA DEBERÁ no importar Prisma, React ni ningún módulo de `next`, para que el archivo sea usable desde servidor y cliente.",
+      "CUANDO `npm run build` y `npm run lint` corren EL SISTEMA DEBERÁ salir con código 0 en ambos."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint"
+    ],
+    "checkpoint": "step-03-helpers-ubicaciones",
+    "files": [
+      "lib/ubicaciones.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T4",
+    "title": "Escribir las pruebas unitarias de los helpers",
+    "epic": "01-cimientos-e-ingesta",
+    "dependencies": [
+      "E1-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO `npm test -- lib/ubicaciones.test.ts` corre EL SISTEMA DEBERÁ salir con código 0 con 0 pruebas fallidas y 0 omitidas.",
+      "CUANDO se leen las pruebas EL SISTEMA DEBERÁ cubrir para `validarCoordenadas` al menos los casos: coordenada válida de Maipú, `NaN`, `null`, latitud 91 y longitud -181.",
+      "CUANDO se leen las pruebas EL SISTEMA DEBERÁ cubrir para `frescuraSenal` los tres bordes: 4 minutos, 19 minutos y 21 minutos, pasando `ahora` explícito para que la prueba no dependa del reloj.",
+      "CUANDO `npm test` corre sobre todo el proyecto EL SISTEMA DEBERÁ salir con código 0 con 0 pruebas fallidas."
+    ],
+    "verify": [
+      "npm test -- lib/ubicaciones.test.ts",
+      "npm test"
+    ],
+    "checkpoint": "step-04-tests-helpers",
+    "files": [
+      "lib/ubicaciones.test.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T5",
+    "title": "Crear POST /api/ubicaciones con lote y 409 sin turno",
+    "epic": "01-cimientos-e-ingesta",
+    "dependencies": [
+      "E1-T2",
+      "E1-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO llega un `POST /api/ubicaciones` sin sesión EL SISTEMA DEBERÁ responder 401 y no escribir ninguna fila.",
+      "CUANDO llega un `POST /api/ubicaciones` de un usuario cuyo `Chofer` no tiene ningún `Turno` con `estado = 'activo'` EL SISTEMA DEBERÁ responder 409 con `{ success: false, error: 'Sin turno activo' }` y no escribir ninguna fila.",
+      "CUANDO el cuerpo trae `latitud` o `longitud` que `validarCoordenadas` rechaza EL SISTEMA DEBERÁ responder 400 y no escribir ninguna fila.",
+      "CUANDO el cuerpo es un array de pings EL SISTEMA DEBERÁ insertarlos con `createMany` en una sola llamada y responder 201 con la cantidad insertada.",
+      "CUANDO se inserta un ping EL SISTEMA DEBERÁ tomar `registrado_en` del valor por defecto del servidor y nunca de una marca de tiempo enviada por el cliente."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "mkdir -p ./.tmp; npm run dev > ./.tmp/viflomax-dev.log 2>&1 & DEV_PID=$!; for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3000/ && break; sleep 2; done; CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ubicaciones -H 'Content-Type: application/json' -d '{\"latitud\":-33.5,\"longitud\":-70.76}'); kill $DEV_PID 2>/dev/null || true; test \"$CODE\" = 401",
+      "grep -qF 'createMany' app/api/ubicaciones/route.ts",
+      "grep -qF 'Sin turno activo' app/api/ubicaciones/route.ts",
+      "grep -qF 'validarCoordenadas' app/api/ubicaciones/route.ts",
+      "grep -qF '409' app/api/ubicaciones/route.ts"
+    ],
+    "checkpoint": "step-05-post-ubicaciones",
+    "files": [
+      "app/api/ubicaciones/route.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T6",
+    "title": "Crear GET /api/ubicaciones/activas con distinct",
+    "epic": "01-cimientos-e-ingesta",
+    "dependencies": [
+      "E1-T5"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO llega un `GET /api/ubicaciones/activas` sin sesión EL SISTEMA DEBERÁ responder 401.",
+      "CUANDO llega un `GET /api/ubicaciones/activas` de un usuario con rol distinto de `admin` EL SISTEMA DEBERÁ responder 403.",
+      "CUANDO un administrador consulta la ruta EL SISTEMA DEBERÁ retornar exactamente una fila por cada `Turno` con `estado = 'activo'` que tenga ubicaciones, usando `distinct: ['turno_id']` con `orderBy` `[{ turno_id: 'asc' }, { registrado_en: 'desc' }]`.",
+      "CUANDO se serializa la respuesta EL SISTEMA DEBERÁ convertir `latitud` y `longitud` con `Number()` de modo que ningún campo sea un objeto `Decimal`.",
+      "CUANDO se arma cada fila EL SISTEMA DEBERÁ incluir el nombre del chofer y la patente de la bodega asociadas al turno."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "mkdir -p ./.tmp; npm run dev > ./.tmp/viflomax-dev.log 2>&1 & DEV_PID=$!; for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3000/ && break; sleep 2; done; CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/ubicaciones/activas); kill $DEV_PID 2>/dev/null || true; test \"$CODE\" = 401",
+      "grep -qF 'distinct' app/api/ubicaciones/activas/route.ts",
+      "grep -qF \"registrado_en: 'desc'\" app/api/ubicaciones/activas/route.ts",
+      "grep -qF 'Number(' app/api/ubicaciones/activas/route.ts",
+      "grep -qF 'patente' app/api/ubicaciones/activas/route.ts"
+    ],
+    "checkpoint": "step-06-get-activas",
+    "files": [
+      "app/api/ubicaciones/activas/route.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T1",
+    "title": "Crear GET /api/ubicaciones/turno/[id] con el trayecto",
+    "epic": "02-captura-en-terreno",
+    "dependencies": [
+      "E1-T5"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "CUANDO llega un `GET /api/ubicaciones/turno/[id]` sin sesión EL SISTEMA DEBERÁ responder 401.",
+      "CUANDO llega un `GET /api/ubicaciones/turno/[id]` de un usuario con rol distinto de `admin` EL SISTEMA DEBERÁ responder 403.",
+      "CUANDO un administrador consulta un turno existente EL SISTEMA DEBERÁ retornar todas sus ubicaciones ordenadas por `registrado_en` ascendente, listas para alimentar una `Polyline`.",
+      "CUANDO un administrador consulta un `id` de turno que no existe EL SISTEMA DEBERÁ responder 404 y no lanzar una excepción no controlada.",
+      "CUANDO se serializa la respuesta EL SISTEMA DEBERÁ convertir `latitud` y `longitud` con `Number()`."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "mkdir -p ./.tmp; npm run dev > ./.tmp/viflomax-dev.log 2>&1 & DEV_PID=$!; for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3000/ && break; sleep 2; done; CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/ubicaciones/turno/00000000-0000-0000-0000-000000000000); kill $DEV_PID 2>/dev/null || true; test \"$CODE\" = 401",
+      "grep -qF \"registrado_en: 'asc'\" -- 'app/api/ubicaciones/turno/[id]/route.ts'",
+      "grep -qF 'Number(' -- 'app/api/ubicaciones/turno/[id]/route.ts'",
+      "grep -qF '404' -- 'app/api/ubicaciones/turno/[id]/route.ts'"
+    ],
+    "checkpoint": "step-07-get-trayecto",
+    "files": [
+      "app/api/ubicaciones/turno/[id]/route.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T2",
+    "title": "Agregar headers() con Permissions-Policy geolocation",
+    "epic": "02-captura-en-terreno",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO se lee `next.config.mjs` EL SISTEMA DEBERÁ exponer una función `headers()` asíncrona que aplica a la ruta `/:path*`.",
+      "CUANDO el servidor responde a cualquier ruta EL SISTEMA DEBERÁ incluir la cabecera `Permissions-Policy: geolocation=(self)`.",
+      "CUANDO se lee `next.config.mjs` EL SISTEMA DEBERÁ no declarar ninguna cabecera `Content-Security-Policy`, porque el proyecto no tiene CSP y agregarla mal rompería Cloudinary y el service worker.",
+      "CUANDO `npm run build` corre EL SISTEMA DEBERÁ salir con código 0 y la envoltura de `@ducanh2912/next-pwa` DEBERÁ seguir aplicada sobre la configuración exportada."
+    ],
+    "verify": [
+      "npm run build",
+      "grep -qF 'geolocation=(self)' next.config.mjs",
+      "mkdir -p ./.tmp; npm run dev > ./.tmp/viflomax-dev.log 2>&1 & DEV_PID=$!; for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3000/ && break; sleep 2; done; curl -sI http://localhost:3000/ > ./.tmp/viflomax-headers.txt; kill $DEV_PID 2>/dev/null || true; grep -qi 'permissions-policy: geolocation=(self)' ./.tmp/viflomax-headers.txt"
+    ],
+    "checkpoint": "step-08-permissions-policy",
+    "files": [
+      "next.config.mjs"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T3",
+    "title": "Migrar IndexedDB a v2 con store de ubicaciones",
+    "epic": "02-captura-en-terreno",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO se lee `lib/utils/index.ts` EL SISTEMA DEBERÁ exportar `aplicarUpgradeIndexedDB(db, oldVersion)` extraída del `onupgradeneeded` que hoy está inline en `abrirDB()`, y `DB_VERSION` DEBERÁ valer 2.",
+      "CUANDO `aplicarUpgradeIndexedDB` recibe un objeto que ya contiene `entregas_pendientes` y `oldVersion` igual a 1 EL SISTEMA DEBERÁ crear `ubicaciones_pendientes` y no volver a crear `entregas_pendientes`.",
+      "CUANDO `aplicarUpgradeIndexedDB` recibe un objeto sin ningún store y `oldVersion` igual a 0 EL SISTEMA DEBERÁ crear tanto `entregas_pendientes` como `ubicaciones_pendientes`.",
+      "CUANDO se lee `lib/utils/index.ts` EL SISTEMA DEBERÁ exportar `guardarUbicacionOffline`, `obtenerUbicacionesPendientes` y `sincronizarUbicaciones`, con la misma forma que los helpers existentes de entregas.",
+      "CUANDO `npm test -- lib/utils/indexeddb-upgrade.test.ts` corre EL SISTEMA DEBERÁ salir con código 0 con 0 pruebas fallidas y 0 omitidas."
+    ],
+    "verify": [
+      "npm test -- lib/utils/indexeddb-upgrade.test.ts",
+      "npm test",
+      "npm run build"
+    ],
+    "checkpoint": "step-09-indexeddb-v2",
+    "files": [
+      "lib/utils/index.ts",
+      "lib/utils/indexeddb-upgrade.test.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T4",
+    "title": "Crear el hook useUbicacionPing con watchPosition",
+    "epic": "02-captura-en-terreno",
+    "dependencies": [
+      "E1-T3",
+      "E2-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO el hook se activa EL SISTEMA DEBERÁ llamar a `navigator.geolocation.watchPosition` con `{ enableHighAccuracy: true, maximumAge: 60000, timeout: 30000 }` y enviar un ping inmediato.",
+      "CUANDO llegan posiciones consecutivas EL SISTEMA DEBERÁ limitar los envíos a uno cada 2 minutos comparando contra una marca de tiempo guardada en un `useRef`, sin usar un temporizador propio.",
+      "CUANDO el componente que usa el hook se desmonta o el hook se desactiva EL SISTEMA DEBERÁ llamar a `clearWatch` con el identificador devuelto por `watchPosition`.",
+      "CUANDO el envío al servidor falla o el permiso está denegado EL SISTEMA DEBERÁ degradar en silencio: encolar el ping con `guardarUbicacionOffline` y no lanzar ni mostrar un error bloqueante.",
+      "CUANDO el hook vuelve a tener conexión EL SISTEMA DEBERÁ vaciar la cola llamando a `sincronizarUbicaciones`, que envía el lote en un solo `POST /api/ubicaciones`.",
+      "CUANDO `npm run build` y `npm run lint` corren EL SISTEMA DEBERÁ salir con código 0 en ambos."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "grep -qF 'clearWatch' lib/useUbicacionPing.ts"
+    ],
+    "checkpoint": "step-10-hook-ping",
+    "files": [
+      "lib/useUbicacionPing.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T5",
+    "title": "Crear UbicacionTracker con consentimiento e indicador",
+    "epic": "02-captura-en-terreno",
+    "dependencies": [
+      "E2-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO el chofer abre la aplicación y aún no ha aceptado EL SISTEMA DEBERÁ mostrar una tarjeta explicativa antes de disparar el prompt nativo del navegador, y el hook DEBERÁ permanecer desactivado hasta la aceptación.",
+      "CUANDO el chofer acepta EL SISTEMA DEBERÁ persistir la decisión en `localStorage` y no volver a mostrar la tarjeta en visitas posteriores.",
+      "CUANDO el rastreo está activo EL SISTEMA DEBERÁ mostrar un indicador permanente y visible mientras se comparte la ubicación.",
+      "CUANDO se lee el texto de la tarjeta EL SISTEMA DEBERÁ declarar explícitamente que el rastreo sólo ocurre durante un turno activo y que se detiene cuando la aplicación se cierra.",
+      "CUANDO el chofer no tiene turno activo EL SISTEMA DEBERÁ no renderizar el indicador ni activar el hook.",
+      "CUANDO `npm run build` y `npm run lint` corren EL SISTEMA DEBERÁ salir con código 0 en ambos."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "grep -qF 'localStorage' components/chofer/UbicacionTracker.tsx",
+      "grep -qF 'use client' components/chofer/UbicacionTracker.tsx"
+    ],
+    "checkpoint": "step-11-tracker-consentimiento",
+    "files": [
+      "components/chofer/UbicacionTracker.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T1",
+    "title": "Montar UbicacionTracker en el layout del chofer",
+    "epic": "03-flota-y-operacion",
+    "dependencies": [
+      "E2-T5"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO se lee `app/chofer/layout.tsx` EL SISTEMA DEBERÁ renderizar `UbicacionTracker` como hijo cliente, manteniendo el layout como componente de servidor asíncrono sin ningún hook.",
+      "CUANDO un usuario sin sesión visita `/chofer` EL SISTEMA DEBERÁ seguir redirigiendo igual que antes, sin cambios en el chequeo de autenticación existente.",
+      "CUANDO se lee el archivo EL SISTEMA DEBERÁ conservar intactos el header y el `<main>{children}</main>` que ya existían.",
+      "CUANDO `npm run build` corre EL SISTEMA DEBERÁ salir con código 0 y no reportar el error de hooks en componente de servidor."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "grep -qF 'UbicacionTracker' app/chofer/layout.tsx"
+    ],
+    "checkpoint": "step-12-montaje-chofer",
+    "files": [
+      "app/chofer/layout.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T2",
+    "title": "Instalar leaflet con pines exactos y crear MapaFlota",
+    "epic": "03-flota-y-operacion",
+    "dependencies": [
+      "E1-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO se lee `package.json` EL SISTEMA DEBERÁ declarar `react-leaflet` en la versión exacta `4.2.1`, sin rango, porque la `5.0.0` exige React 19 y este proyecto usa React 18.",
+      "CUANDO se lee `package.json` EL SISTEMA DEBERÁ declarar `leaflet` en la versión exacta `1.9.4` y `@types/leaflet` como dependencia de desarrollo.",
+      "CUANDO se lee `package.json` EL SISTEMA DEBERÁ no declarar `@react-leaflet/core` como dependencia directa, porque se resuelve de forma transitiva.",
+      "CUANDO se lee `components/admin/MapaFlota.tsx` EL SISTEMA DEBERÁ importar `leaflet/dist/leaflet.css` dentro de ese archivo y usar `L.divIcon` con HTML inline para los marcadores, nunca el icono por defecto de Leaflet.",
+      "CUANDO se renderiza un marcador EL SISTEMA DEBERÁ elegir su color llamando a `frescuraSenal`: `#10b981` para `'fresca'`, `#f59e0b` para `'vieja'` y `#ef4444` para `'sin_senal'`.",
+      "CUANDO `npm run build` corre EL SISTEMA DEBERÁ salir con código 0."
+    ],
+    "verify": [
+      "node -e \"const p=require('./package.json');if(p.dependencies['react-leaflet']!=='4.2.1'){console.error('react-leaflet debe estar pineado en 4.2.1');process.exit(1)};if(p.dependencies['leaflet']!=='1.9.4'){console.error('leaflet debe estar pineado en 1.9.4');process.exit(1)};if(p.dependencies['@react-leaflet/core']){console.error('@react-leaflet/core no debe ser dependencia directa');process.exit(1)}\"",
+      "grep -qF 'leaflet/dist/leaflet.css' components/admin/MapaFlota.tsx",
+      "grep -qF 'divIcon' components/admin/MapaFlota.tsx",
+      "npm run build",
+      "npm run lint"
+    ],
+    "checkpoint": "step-13-leaflet-mapa",
+    "files": [
+      "package.json",
+      "package-lock.json",
+      "components/admin/MapaFlota.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T3",
+    "title": "Crear FlotaClient con polling de 15 s y tres estados",
+    "epic": "03-flota-y-operacion",
+    "dependencies": [
+      "E1-T6",
+      "E3-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO `FlotaClient` se monta EL SISTEMA DEBERÁ cargar `MapaFlota` con `dynamic(() => import('./MapaFlota'), { ssr: false })` mostrando un esqueleto mientras carga.",
+      "CUANDO el componente está montado EL SISTEMA DEBERÁ consultar `GET /api/ubicaciones/activas` cada 15 segundos con `setInterval`, usando una bandera `cancelled` y llamando a `clearInterval` en la limpieza para ser seguro bajo StrictMode.",
+      "CUANDO la respuesta llega vacía EL SISTEMA DEBERÁ mostrar una tarjeta de estado vacío con texto, nunca un mapa en blanco sin explicación.",
+      "CUANDO una consulta falla EL SISTEMA DEBERÁ mantener renderizadas las últimas posiciones buenas y mostrar un banner ámbar delgado con el texto de reconexión.",
+      "CUANDO `npm run build` y `npm run lint` corren EL SISTEMA DEBERÁ salir con código 0 en ambos."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "grep -qF 'ssr: false' components/admin/FlotaClient.tsx",
+      "grep -qF 'clearInterval' components/admin/FlotaClient.tsx"
+    ],
+    "checkpoint": "step-14-flota-client",
+    "files": [
+      "components/admin/FlotaClient.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T4",
+    "title": "Crear /admin/flota y su entrada en el Sidebar",
+    "epic": "03-flota-y-operacion",
+    "dependencies": [
+      "E3-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "CUANDO un usuario sin sesión visita `/admin/flota` EL SISTEMA DEBERÁ responder 307 redirigiendo al login.",
+      "CUANDO se lee `components/admin/Sidebar.tsx` EL SISTEMA DEBERÁ contener `/admin/flota` dentro de `navItems` y EL SISTEMA DEBERÁ no contenerlo dentro de `VISOR_HREFS`.",
+      "CUANDO se lee `lib/auth/middleware.ts` EL SISTEMA DEBERÁ no mencionar `flota` en la lista de rutas permitidas al rol `visor`, de modo que el middleware existente siga redirigiendo a `visor` hacia `/admin/pedidos`.",
+      "CUANDO se lee `app/admin/flota/page.tsx` EL SISTEMA DEBERÁ ser un componente de servidor que verifica `token.role === 'admin'` inline y renderiza `FlotaClient`.",
+      "CUANDO se renderiza la página EL SISTEMA DEBERÁ incluir, junto al mapa, una tabla accesible con una fila por chofer en turno indicando nombre, patente, frescura de señal y hora de la última posición."
+    ],
+    "verify": [
+      "npm run build",
+      "npm run lint",
+      "node -e \"const s=require('fs').readFileSync('components/admin/Sidebar.tsx','utf8');const m=s.match(/VISOR_HREFS\\s*=\\s*\\[([^\\]]*)\\]/);if(!m){console.error('VISOR_HREFS no encontrado');process.exit(3)};if(m[1].includes('/admin/flota')){console.error('/admin/flota no debe estar en VISOR_HREFS');process.exit(1)};if(!s.includes('/admin/flota')){console.error('/admin/flota debe estar en navItems');process.exit(1)}\"",
+      "node -e \"const s=require('fs').readFileSync('lib/auth/middleware.ts','utf8');if(!s.includes('visor')){console.error('el middleware ya no menciona visor');process.exit(3)};if(s.includes('flota')){console.error('flota no debe aparecer en el middleware de visor');process.exit(1)}\"",
+      "mkdir -p ./.tmp; npm run dev > ./.tmp/viflomax-dev.log 2>&1 & DEV_PID=$!; for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3000/ && break; sleep 2; done; CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/admin/flota); kill $DEV_PID 2>/dev/null || true; test \"$CODE\" = 307"
+    ],
+    "checkpoint": "step-15-pagina-flota",
+    "files": [
+      "app/admin/flota/page.tsx",
+      "components/admin/Sidebar.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T5",
+    "title": "Agregar la purga de retención a 90 días",
+    "epic": "03-flota-y-operacion",
+    "dependencies": [
+      "E1-T4",
+      "E2-T1",
+      "E2-T2",
+      "E3-T1",
+      "E3-T4"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "CUANDO `npm run ubicaciones:purgar` corre EL SISTEMA DEBERÁ salir con código 0 e imprimir la cantidad de filas de `Ubicacion` eliminadas.",
+      "CUANDO el script corre EL SISTEMA DEBERÁ eliminar únicamente las filas con `registrado_en` anterior a 90 días y no tocar ninguna fila más reciente.",
+      "CUANDO se lee `package.json` EL SISTEMA DEBERÁ definir el script `ubicaciones:purgar` como `node --env-file=.env scripts/purgar-ubicaciones.mjs`, sin agregar ninguna dependencia nueva.",
+      "CUANDO el script corre dos veces seguidas EL SISTEMA DEBERÁ salir con código 0 ambas veces y reportar 0 eliminadas en la segunda.",
+      "CUANDO `npm run build`, `npm run lint` y `npm test` corren al cerrar el paso EL SISTEMA DEBERÁ salir con código 0 en los tres, con 0 pruebas fallidas."
+    ],
+    "verify": [
+      "npm run ubicaciones:purgar",
+      "npm run ubicaciones:purgar",
+      "npm run build",
+      "npm run lint",
+      "npm test"
+    ],
+    "checkpoint": "step-16-retencion-purga",
+    "files": [
+      "scripts/purgar-ubicaciones.mjs",
+      "package.json"
+    ],
+    "status": "pending"
+  }
+]
