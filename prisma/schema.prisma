@@ -164,6 +164,8 @@ model PedidoItem {
   subtotal        Decimal  @db.Decimal(10, 2) // cantidad * precio_unitario (calculado en app)
   pedido          Pedido   @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
   producto        Producto @relation(fields: [producto_id], references: [id])
+
+  @@index([pedido_id])
 }
 
 model Entrega {

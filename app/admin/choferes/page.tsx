@@ -15,7 +15,19 @@ export default async function ChoferesPage() {
   const choferesConHistorial = choferes.map((c) => ({
     ...c,
     tieneHistorial: c._count.entregas > 0 || c._count.turnos > 0,
+    entregasCount: c._count.entregas,
+    turnosCount: c._count.turnos,
   }))
 
-  return <ChoferesClient choferes={choferesConHistorial as unknown as (Chofer & { tieneHistorial: boolean })[]} />
+  return (
+    <ChoferesClient
+      choferes={
+        choferesConHistorial as unknown as (Chofer & {
+          tieneHistorial: boolean
+          entregasCount: number
+          turnosCount: number
+        })[]
+      }
+    />
+  )
 }

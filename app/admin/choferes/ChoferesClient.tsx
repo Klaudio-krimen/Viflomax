@@ -301,26 +301,20 @@ function EditarChoferModal({
 }
 
 // ─── Botón: Eliminar chofer ───────────────────────────────────────────────────
+type ChoferConHistorial = Chofer & {
+  tieneHistorial: boolean
+  entregasCount: number
+  turnosCount: number
+}
+
 function EliminarChoferButton({
   chofer,
   onSuccess,
 }: {
-  chofer: Chofer & { tieneHistorial: boolean }
+  chofer: ChoferConHistorial
   onSuccess: () => void
 }) {
   const [pending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
-
-  if (chofer.tieneHistorial) {
-    return (
-      <span
-        title="Este chofer tiene entregas o turnos registrados. Desactívalo en vez de eliminarlo."
-        className="px-2.5 py-1 text-xs bg-gray-50 text-gray-400 rounded-lg font-medium font-outfit border border-gray-200 cursor-not-allowed select-none"
-      >
-        Eliminar
-      </span>
-    )
-  }
 
   function handleClick() {
     if (
@@ -329,11 +323,9 @@ function EliminarChoferButton({
       )
     )
       return
-    setError(null)
     startTransition(async () => {
       const result = await eliminarChofer(chofer.id)
       if (result.error) {
-        setError(result.error)
         window.alert(result.error)
       } else {
         onSuccess()
@@ -341,16 +333,134 @@ function EliminarChoferButton({
     })
   }
 
+  if (chofer.tieneHistorial) {
+    return <EliminarChoferForzadoButton chofer={chofer} onSuccess={onSuccess} />
+  }
+
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={pending}
-      title={error ?? undefined}
       className="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium font-outfit border border-red-200 disabled:opacity-50"
     >
       {pending ? '…' : 'Eliminar'}
     </button>
+  )
+}
+
+// ─── Botón + modal: Eliminar chofer CON historial (fuerza cascada) ───────────
+function EliminarChoferForzadoButton({
+  chofer,
+  onSuccess,
+}: {
+  chofer: ChoferConHistorial
+  onSuccess: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  const partes: string[] = []
+  if (chofer.turnosCount > 0) partes.push(`${chofer.turnosCount} turno${chofer.turnosCount !== 1 ? 's' : ''}`)
+  if (chofer.entregasCount > 0)
+    partes.push(`${chofer.entregasCount} entrega${chofer.entregasCount !== 1 ? 's' : ''}`)
+  const resumenHistorial = partes.join(' y ')
+
+  function handleClose() {
+    if (pending) return
+    setOpen(false)
+    setConfirmText('')
+    setError(null)
+  }
+
+  function handleConfirmar() {
+    setError(null)
+    startTransition(async () => {
+      const result = await eliminarChofer(chofer.id, true)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setOpen(false)
+        setConfirmText('')
+        onSuccess()
+      }
+    })
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Este chofer tiene entregas o turnos registrados. Eliminar borrará también ese historial."
+        className="px-2.5 py-1 text-xs bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors font-medium font-outfit border border-amber-200"
+      >
+        Eliminar de todas formas
+      </button>
+
+      <Modal isOpen={open} onClose={handleClose} title={`Eliminar a ${chofer.nombre}`} size="md">
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm font-outfit space-y-1.5">
+            <p className="font-semibold">Esta acción es irreversible.</p>
+            <p>
+              Este chofer tiene {resumenHistorial} registrados. Al continuar se eliminarán
+              permanentemente esos turnos y entregas. Los pedidos vinculados a este chofer NO se
+              borran, pero quedarán sin chofer asignado.
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm font-outfit">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700 font-outfit">
+              Escribe <span className="font-semibold">{chofer.nombre}</span> para confirmar
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              autoFocus
+              className="rounded-lg px-3 py-2 text-sm text-gray-900 bg-white outline-none ring-1 ring-gray-300 focus:ring-red-500 transition-shadow"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              onClick={handleClose}
+              className="flex-1"
+              disabled={pending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              className="flex-1"
+              loading={pending}
+              disabled={confirmText !== chofer.nombre}
+              disabledReason={
+                confirmText !== chofer.nombre
+                  ? 'Escribe el nombre exacto del chofer para habilitar este botón'
+                  : undefined
+              }
+              onClick={handleConfirmar}
+            >
+              Eliminar definitivamente
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   )
 }
 
@@ -395,7 +505,7 @@ function ToggleActivoButton({
 export function ChoferesClient({
   choferes,
 }: {
-  choferes: (Chofer & { tieneHistorial: boolean })[]
+  choferes: ChoferConHistorial[]
 }) {
   const router = useRouter()
 

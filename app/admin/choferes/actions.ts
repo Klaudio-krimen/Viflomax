@@ -92,7 +92,11 @@ export async function editarChofer(
 }
 
 // ─── Eliminar chofer ─────────────────────────────────────────────────────────
-export async function eliminarChofer(id: string): Promise<ActionResult> {
+// `forzar`: cuando el chofer tiene historial (entregas/turnos), por defecto se
+// bloquea el borrado. Con forzar=true se elimina en cascada: se borran sus
+// entregas y turnos, y los pedidos vinculados quedan con chofer_id = null
+// (los pedidos en sí NO se eliminan). Pensado para limpiar datos de prueba.
+export async function eliminarChofer(id: string, forzar = false): Promise<ActionResult> {
   if (!(await verificarAdmin())) return { error: 'No autorizado' }
 
   try {
@@ -102,13 +106,13 @@ export async function eliminarChofer(id: string): Promise<ActionResult> {
     })
     if (!chofer) return { error: 'Chofer no encontrado' }
 
-    // No permitir borrar historial de negocio: si el chofer ya tiene entregas
-    // o turnos registrados, solo se puede desactivar (desvincular), no eliminar.
     const [entregas, turnos] = await Promise.all([
       db.entrega.count({ where: { chofer_id: id } }),
       db.turno.count({ where: { chofer_id: id } }),
     ])
-    if (entregas > 0 || turnos > 0) {
+    const tieneHistorial = entregas > 0 || turnos > 0
+
+    if (tieneHistorial && !forzar) {
       return {
         error:
           'Este chofer tiene entregas o turnos registrados. Desactívalo en vez de eliminarlo.',
@@ -116,6 +120,13 @@ export async function eliminarChofer(id: string): Promise<ActionResult> {
     }
 
     await db.$transaction(async (tx) => {
+      // Entrega.chofer_id es ON DELETE RESTRICT: hay que borrarlas antes.
+      // Turno.chofer_id es ON DELETE CASCADE y Pedido.chofer_id es ON DELETE
+      // SET NULL, así que la base de datos se encarga de esos dos al borrar
+      // el chofer.
+      if (tieneHistorial) {
+        await tx.entrega.deleteMany({ where: { chofer_id: id } })
+      }
       await tx.chofer.delete({ where: { id } })
       if (chofer.user_id) {
         await tx.user.delete({ where: { id: chofer.user_id } })
