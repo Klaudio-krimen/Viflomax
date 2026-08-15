@@ -14,6 +14,7 @@ type PrecioEditorProps = {
 }
 
 type ProductoOption = { id: string; nombre: string; categoria: string }
+type ClienteOption = { id: string; nombre: string; sector: string | null; tipo_cliente: string }
 
 function validarVolumenes(min: string, max: string): string | null {
   if (!min) return null
@@ -29,8 +30,10 @@ function validarVolumenes(min: string, max: string): string | null {
 export function PrecioEditor({ tipo, empresaId, onSave, onCancel }: PrecioEditorProps) {
   const [productos, setProductos] = useState<ProductoOption[]>([])
   const [loadingProductos, setLoadingProductos] = useState(true)
+  const [clientes, setClientes] = useState<ClienteOption[]>([])
 
   const [productoId, setProductoId] = useState('')
+  const [clienteId, setClienteId] = useState('')
   const [volMin, setVolMin] = useState('1')
   const [volMax, setVolMax] = useState('')
   const [precio, setPrecio] = useState('')
@@ -47,6 +50,15 @@ export function PrecioEditor({ tipo, empresaId, onSave, onCancel }: PrecioEditor
       .catch(() => setProductos([]))
       .finally(() => setLoadingProductos(false))
   }, [])
+
+  // Los clientes solo se usan en precios de detalle (precio personalizado)
+  useEffect(() => {
+    if (tipo !== 'detalle') return
+    fetch('/api/clientes')
+      .then((r) => r.json())
+      .then((json: { data?: ClienteOption[] }) => setClientes(json.data ?? []))
+      .catch(() => setClientes([]))
+  }, [tipo])
 
   const volError = validarVolumenes(volMin, volMax)
 
@@ -74,7 +86,8 @@ export function PrecioEditor({ tipo, empresaId, onSave, onCancel }: PrecioEditor
             }
           : {
               producto_id: productoId,
-              sector: sector || null,
+              sector: clienteId ? null : sector || null,
+              cliente_id: clienteId || null,
               cantidad_minima: Number(volMin) || 1,
               cantidad_maxima: volMax ? Number(volMax) : null,
               precio: Number(precio),
@@ -135,16 +148,50 @@ export function PrecioEditor({ tipo, empresaId, onSave, onCancel }: PrecioEditor
         )}
       </div>
 
-      {/* Sector (solo detalle) */}
+      {/* Cliente + Sector (solo detalle, mutuamente excluyentes) */}
       {tipo === 'detalle' && (
-        <Input
-          label="Sector"
-          id="pe-sector"
-          value={sector}
-          onChange={(e) => setSector(e.target.value)}
-          placeholder="ej: sur, norte, centro (opcional)"
-          helperText="Deja vacío para aplicar a todos los sectores"
-        />
+        <>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="pe-cliente" className="font-medium text-sm text-gray-700 font-outfit">
+              Cliente
+            </label>
+            <select
+              id="pe-cliente"
+              value={clienteId}
+              onChange={(e) => {
+                setClienteId(e.target.value)
+                if (e.target.value) setSector('')
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-outfit text-gray-900 focus:outline-none focus:ring-2 focus:ring-viflomax-azul"
+            >
+              <option value="">Sin cliente — precio por sector</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                  {c.sector ? ` — ${c.sector}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-gray-500 font-outfit">
+              Elige un cliente para darle un precio personalizado. Ese precio tiene prioridad sobre
+              el de su sector y sobre el mayorista.
+            </p>
+          </div>
+
+          <Input
+            label="Sector"
+            id="pe-sector"
+            value={sector}
+            onChange={(e) => setSector(e.target.value)}
+            placeholder="ej: sur, norte, centro (opcional)"
+            disabled={!!clienteId}
+            helperText={
+              clienteId
+                ? 'No aplica: el precio es para el cliente seleccionado, sin importar su sector'
+                : 'Deja vacío para aplicar a todos los sectores'
+            }
+          />
+        </>
       )}
 
       {/* Volúmenes */}

@@ -92,6 +92,7 @@ export type PrecioDetalle = {
   id: string
   producto_id: string
   sector: string | null
+  cliente_id: string | null
   cantidad_minima: number
   cantidad_maxima: number | null
   precio: number
@@ -136,7 +137,14 @@ export type Pedido = {
 /**
  * Origen del precio aplicado en un item de pedido
  */
-export type OrigenPrecio = 'mayorista' | 'detalle_sector' | 'detalle_generico' | 'base' | 'manual' | 'sin_precio'
+export type OrigenPrecio =
+  | 'detalle_cliente'
+  | 'mayorista'
+  | 'detalle_sector'
+  | 'detalle_generico'
+  | 'base'
+  | 'manual'
+  | 'sin_precio'
 
 /**
  * Item de pedido (línea de producto en un pedido)
@@ -242,6 +250,7 @@ export type InputCalculoPrecio = {
   clienteTipo: 'mayorista' | 'detalle'
   empresaId?: string // solo para tipo mayorista
   sector?: string // solo para tipo detalle
+  clienteId?: string // precio personalizado del cliente; tiene prioridad sobre todo lo demás
 }
 
 /**

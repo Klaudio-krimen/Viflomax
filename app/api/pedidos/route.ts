@@ -188,6 +188,7 @@ export async function POST(request: NextRequest) {
       clienteTipo,
       empresaId: body.empresa_id ?? empresaIdResuelto,
       sector,
+      clienteId: body.cliente_id,
     })
 
     if (resultado.origen === 'sin_precio') tieneSinPrecio = true

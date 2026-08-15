@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
   let body: {
     producto_id?: string
     sector?: string
+    cliente_id?: string
     cantidad_minima?: number
     cantidad_maxima?: number
     precio?: number
@@ -116,11 +117,36 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Un precio es para un cliente puntual O para un sector, nunca ambos.
+  if (body.cliente_id && body.sector) {
+    return NextResponse.json(
+      {
+        data: null,
+        error: 'Un precio no puede tener cliente y sector a la vez',
+      } as ApiResponse<PrecioDetalle>,
+      { status: 400 }
+    )
+  }
+
+  if (body.cliente_id) {
+    const cliente = await db.cliente.findUnique({
+      where: { id: body.cliente_id },
+      select: { id: true },
+    })
+    if (!cliente) {
+      return NextResponse.json(
+        { data: null, error: 'El cliente indicado no existe' } as ApiResponse<PrecioDetalle>,
+        { status: 400 }
+      )
+    }
+  }
+
   try {
     const precio = await db.precioDetalle.create({
       data: {
         producto_id: body.producto_id,
-        sector: body.sector ?? null,
+        sector: body.cliente_id ? null : body.sector ?? null,
+        cliente_id: body.cliente_id ?? null,
         cantidad_minima: body.cantidad_minima,
         cantidad_maxima: body.cantidad_maxima ?? null,
         precio: body.precio,

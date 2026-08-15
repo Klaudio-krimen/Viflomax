@@ -24,7 +24,7 @@ export function NuevoPrecioButton() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Nuevo Precio por Sector"
+        title="Nuevo Precio por Sector o Cliente"
         size="md"
       >
         <PrecioEditor

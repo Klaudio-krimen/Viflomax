@@ -210,4 +210,96 @@ describe('calcularPrecioItem', () => {
     expect(result.origen).toBe('sin_precio')
     expect(result.precio).toBe(0)
   })
+
+  // ── Test 11: Precio personalizado gana sobre el mayorista ─────────────────
+  it('11. cliente — el precio personalizado tiene prioridad sobre el mayorista', async () => {
+    mockFindManyMayorista.mockResolvedValue([
+      { id: 'm1', empresa_id: 'emp1', producto_id: 'prod1', volumen_minimo: 1, volumen_maximo: null, precio: 1900 },
+    ])
+    mockFindManyDetalle.mockImplementation(({ where }) =>
+      Promise.resolve(
+        where.cliente_id === 'cli1'
+          ? [{ id: 'c1', producto_id: 'prod1', sector: null, cliente_id: 'cli1', cantidad_minima: 1, cantidad_maxima: null, precio: 1500 }]
+          : []
+      )
+    )
+
+    const result = await calcularPrecioItem({
+      productoId: 'prod1',
+      cantidad: 20,
+      clienteTipo: 'mayorista',
+      empresaId: 'emp1',
+      clienteId: 'cli1',
+    })
+
+    expect(result.precio).toBe(1500)
+    expect(result.origen).toBe('detalle_cliente')
+    expect(result.tramo_aplicado).toBe('1+ unidades')
+  })
+
+  // ── Test 12: Sin precio personalizado cae al precio del sector ────────────
+  it('12. cliente — sin precio personalizado cae al precio de su sector', async () => {
+    mockFindManyDetalle.mockImplementation(({ where }) =>
+      Promise.resolve(
+        where.cliente_id === null && where.sector === 'centro'
+          ? [{ id: 's1', producto_id: 'prod1', sector: 'centro', cliente_id: null, cantidad_minima: 1, cantidad_maxima: null, precio: 2500 }]
+          : []
+      )
+    )
+
+    const result = await calcularPrecioItem({
+      productoId: 'prod1',
+      cantidad: 3,
+      clienteTipo: 'detalle',
+      sector: 'centro',
+      clienteId: 'cli-sin-precio',
+    })
+
+    expect(result.precio).toBe(2500)
+    expect(result.origen).toBe('detalle_sector')
+  })
+
+  // ── Test 13: Un precio de cliente no se filtra como precio genérico ───────
+  it('13. aislamiento — el precio de un cliente no aplica a otros clientes', async () => {
+    // La tabla solo tiene un precio personalizado (sector null, cliente_id
+    // seteado). Otro cliente no debe heredarlo como precio genérico.
+    const filaDeOtroCliente = {
+      id: 'c1', producto_id: 'prod1', sector: null, cliente_id: 'cli1',
+      cantidad_minima: 1, cantidad_maxima: null, precio: 1500,
+    }
+    mockFindManyDetalle.mockImplementation(({ where }) =>
+      Promise.resolve(
+        // Simula el filtro real de Postgres sobre cliente_id
+        where.cliente_id === filaDeOtroCliente.cliente_id ? [filaDeOtroCliente] : []
+      )
+    )
+    mockFindUniqueProducto.mockResolvedValue({ precio_base: 2800 })
+
+    const result = await calcularPrecioItem({
+      productoId: 'prod1',
+      cantidad: 3,
+      clienteTipo: 'detalle',
+      clienteId: 'cli2',
+    })
+
+    expect(result.precio).toBe(2800)
+    expect(result.origen).toBe('base')
+  })
+
+  // ── Test 14: La búsqueda genérica excluye precios de cliente ──────────────
+  it('14. aislamiento — la query de sector/genérico filtra por cliente_id null', async () => {
+    mockFindManyDetalle.mockResolvedValue([])
+    mockFindUniqueProducto.mockResolvedValue({ precio_base: 2000 })
+
+    await calcularPrecioItem({
+      productoId: 'prod1',
+      cantidad: 3,
+      clienteTipo: 'detalle',
+      sector: 'sur',
+    })
+
+    for (const llamada of mockFindManyDetalle.mock.calls) {
+      expect(llamada[0].where.cliente_id).toBeNull()
+    }
+  })
 })

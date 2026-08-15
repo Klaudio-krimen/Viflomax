@@ -111,8 +111,9 @@ model Cliente {
   activo       Boolean   @default(true)
   notas        String?
   created_at   DateTime  @default(now())
-  empresa      Empresa?  @relation(fields: [empresa_id], references: [id], onDelete: SetNull)
-  pedidos      Pedido[]
+  empresa         Empresa?        @relation(fields: [empresa_id], references: [id], onDelete: SetNull)
+  pedidos         Pedido[]
+  precios_detalle PrecioDetalle[]
 }
 
 model Chofer {
@@ -283,7 +284,9 @@ model PrecioMayorista {
 model PrecioDetalle {
   id              String    @id @default(uuid())
   producto_id     String
+  // Un precio es para un sector O para un cliente puntual, nunca ambos.
   sector          String?
+  cliente_id      String?
   cantidad_minima Int       @default(1)
   cantidad_maxima Int?
   precio          Decimal   @db.Decimal(10, 2)
@@ -292,6 +295,8 @@ model PrecioDetalle {
   vigente_hasta   DateTime? @db.Date
   created_at      DateTime  @default(now())
   producto        Producto  @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  cliente         Cliente?  @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
 
-  @@unique([producto_id, sector, cantidad_minima])
+  @@unique([producto_id, sector, cliente_id, cantidad_minima])
+  @@index([cliente_id])
 }
