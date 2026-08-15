@@ -8,7 +8,13 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import type { Chofer } from '@/lib/types'
-import { crearChofer, editarChofer, toggleActivoChofer, eliminarChofer } from './actions'
+import {
+  crearChofer,
+  editarChofer,
+  toggleActivoChofer,
+  eliminarChofer,
+  resetPasswordChofer,
+} from './actions'
 
 // ─── Generador de contraseña temporal ────────────────────────────────────────
 function generatePassword(): string {
@@ -26,18 +32,79 @@ function generatePassword(): string {
   return arr.sort(() => Math.random() - 0.5).join('')
 }
 
+// ─── Campo de contraseña con generador y copiado ─────────────────────────────
+function CampoPasswordGenerada({
+  value,
+  onChange,
+  label,
+  helperText,
+  id,
+}: {
+  value: string
+  onChange: (value: string) => void
+  label: string
+  helperText: string
+  id: string
+}) {
+  const [copied, setCopied] = useState(false)
+
+  function copyPassword() {
+    navigator.clipboard.writeText(value).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="font-medium text-sm text-gray-700 font-outfit">
+        {label}{' '}
+        <span className="text-red-500 ml-0.5" aria-hidden="true">
+          *
+        </span>
+      </label>
+      <div className="flex gap-2">
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required
+          className="flex-1 rounded-lg px-3 py-2 text-sm font-mono text-gray-900 bg-white outline-none ring-1 ring-gray-300 focus:ring-viflomax-azul transition-shadow min-w-0"
+        />
+        <button
+          type="button"
+          onClick={() => onChange(generatePassword())}
+          title="Generar nueva contraseña"
+          aria-label="Generar nueva contraseña"
+          className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 shrink-0"
+        >
+          ↺
+        </button>
+        <button
+          type="button"
+          onClick={copyPassword}
+          title="Copiar contraseña"
+          aria-label="Copiar contraseña"
+          className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 shrink-0"
+        >
+          {copied ? '✓' : '⎘'}
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 font-outfit">{helperText}</p>
+    </div>
+  )
+}
+
 // ─── Modal: Agregar chofer ────────────────────────────────────────────────────
 function AgregarChoferModal({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
-  const [copied, setCopied] = useState(false)
 
   function handleOpen() {
     setPassword(generatePassword())
     setError(null)
-    setCopied(false)
     setOpen(true)
   }
 
@@ -45,12 +112,6 @@ function AgregarChoferModal({ onSuccess }: { onSuccess: () => void }) {
     if (pending) return
     setOpen(false)
     setError(null)
-  }
-
-  function copyPassword() {
-    navigator.clipboard.writeText(password).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -112,44 +173,13 @@ function AgregarChoferModal({ onSuccess }: { onSuccess: () => void }) {
             helperText="El chofer usará este email para ingresar desde su celular"
           />
 
-          {/* Contraseña temporal con generador */}
-          <div className="flex flex-col gap-1">
-            <label className="font-medium text-sm text-gray-700 font-outfit">
-              Contraseña temporal{' '}
-              <span className="text-red-500 ml-0.5" aria-hidden="true">
-                *
-              </span>
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="flex-1 rounded-lg px-3 py-2 text-sm font-mono text-gray-900 bg-white outline-none ring-1 ring-gray-300 focus:ring-viflomax-azul transition-shadow min-w-0"
-                aria-label="Contraseña temporal"
-              />
-              <button
-                type="button"
-                onClick={() => setPassword(generatePassword())}
-                title="Generar nueva contraseña"
-                className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 shrink-0"
-              >
-                ↺
-              </button>
-              <button
-                type="button"
-                onClick={copyPassword}
-                title="Copiar contraseña"
-                className="px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 shrink-0"
-              >
-                {copied ? '✓' : '⎘'}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 font-outfit">
-              Comunica esta contraseña al chofer. Podrá cambiarla desde su cuenta.
-            </p>
-          </div>
+          <CampoPasswordGenerada
+            id="nuevo-chofer-password"
+            label="Contraseña temporal"
+            value={password}
+            onChange={setPassword}
+            helperText="Comunica esta contraseña al chofer para su primer ingreso."
+          />
 
           <Input
             label="Teléfono"
@@ -188,6 +218,115 @@ function AgregarChoferModal({ onSuccess }: { onSuccess: () => void }) {
         </form>
       </Modal>
     </>
+  )
+}
+
+// ─── Sección: Restablecer contraseña (dentro del modal de edición) ───────────
+function ResetPasswordSection({ chofer }: { chofer: Chofer }) {
+  const [abierto, setAbierto] = useState(false)
+  const [password, setPassword] = useState('')
+  const [guardada, setGuardada] = useState(false)
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  if (!chofer.user_id) {
+    return (
+      <p className="text-sm font-outfit text-gray-500">
+        Este chofer no tiene cuenta de acceso al sistema, así que no hay contraseña que
+        restablecer.
+      </p>
+    )
+  }
+
+  function abrir() {
+    setPassword(generatePassword())
+    setError(null)
+    setGuardada(false)
+    setAbierto(true)
+  }
+
+  function guardar() {
+    setError(null)
+    startTransition(async () => {
+      const result = await resetPasswordChofer(chofer.id, password)
+      if (result.error) setError(result.error)
+      else setGuardada(true)
+    })
+  }
+
+  if (!abierto) {
+    return (
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-gray-700 font-outfit">Contraseña de acceso</p>
+          <p className="text-xs text-gray-500 font-outfit mt-0.5">
+            Si el chofer la olvidó, genera una nueva y comunícasela.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={abrir}
+          className="px-3 py-1.5 text-xs bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium font-outfit border border-gray-200 shrink-0"
+        >
+          Restablecer
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm font-outfit">
+          {error}
+        </div>
+      )}
+
+      {guardada && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3 text-sm font-outfit">
+          Contraseña actualizada. Cópiala y comunícasela al chofer — no se podrá ver de nuevo
+          después de cerrar esta ventana.
+        </div>
+      )}
+
+      <CampoPasswordGenerada
+        id={`reset-password-${chofer.id}`}
+        label="Nueva contraseña"
+        value={password}
+        onChange={(v) => {
+          setPassword(v)
+          setGuardada(false)
+        }}
+        helperText="La contraseña anterior deja de funcionar apenas guardes."
+      />
+
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setAbierto(false)}
+          className="flex-1"
+          disabled={pending}
+        >
+          {guardada ? 'Listo' : 'Cancelar'}
+        </Button>
+        <Button
+          type="button"
+          variant="danger"
+          size="sm"
+          className="flex-1"
+          loading={pending}
+          disabled={password.length < 6 || guardada}
+          disabledReason={
+            password.length < 6 ? 'La contraseña debe tener al menos 6 caracteres' : undefined
+          }
+          onClick={guardar}
+        >
+          {guardada ? 'Guardada' : 'Guardar contraseña'}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -269,10 +408,6 @@ function EditarChoferModal({
             defaultValue={chofer.vehiculo ?? ''}
           />
 
-          <p className="text-xs text-gray-400 font-outfit">
-            Para cambiar el email o contraseña, usa el panel de Supabase → Auth → Users.
-          </p>
-
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -295,6 +430,10 @@ function EditarChoferModal({
             </Button>
           </div>
         </form>
+
+        <div className="mt-5 pt-5 border-t border-gray-200">
+          <ResetPasswordSection chofer={chofer} />
+        </div>
       </Modal>
     </>
   )

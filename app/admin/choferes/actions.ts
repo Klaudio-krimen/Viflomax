@@ -91,6 +91,41 @@ export async function editarChofer(
   return { error: null }
 }
 
+// ─── Restablecer contraseña de acceso ────────────────────────────────────────
+// Para cuando el chofer olvida su contraseña: el admin genera una nueva y se
+// la comunica. No pide la contraseña anterior — es un reset, no un cambio.
+export async function resetPasswordChofer(
+  id: string,
+  nuevaPassword: string
+): Promise<ActionResult> {
+  if (!(await verificarAdmin())) return { error: 'No autorizado' }
+
+  const password = nuevaPassword?.trim()
+  if (!password || password.length < 6)
+    return { error: 'La contraseña debe tener al menos 6 caracteres' }
+
+  const chofer = await db.chofer.findUnique({
+    where: { id },
+    select: { user_id: true },
+  })
+  if (!chofer) return { error: 'Chofer no encontrado' }
+  if (!chofer.user_id)
+    return { error: 'Este chofer no tiene cuenta de acceso al sistema' }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12)
+    await db.user.update({
+      where: { id: chofer.user_id },
+      data: { password: hashedPassword },
+    })
+  } catch {
+    return { error: 'Error actualizando la contraseña' }
+  }
+
+  revalidatePath('/admin/choferes')
+  return { error: null }
+}
+
 // ─── Eliminar chofer ─────────────────────────────────────────────────────────
 // `forzar`: cuando el chofer tiene historial (entregas/turnos), por defecto se
 // bloquea el borrado. Con forzar=true se elimina en cascada: se borran sus
