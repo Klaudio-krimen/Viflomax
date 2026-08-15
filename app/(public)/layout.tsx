@@ -1,12 +1,27 @@
 import Link from 'next/link'
 import { WhatsAppFloat } from '@/components/public/WhatsAppFloat'
+import {
+  TELEFONO_LEGIBLE,
+  TELEFONO_HREF,
+  TIENE_WHATSAPP,
+  HORARIO,
+} from '@/lib/contacto'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ''
-  const telefono = waNumber ? `+${waNumber}` : 'N/A'
-
   return (
     <>
+      {/* Barra de contacto */}
+      {TIENE_WHATSAPP && (
+        <div className="bg-viflomax-azul-oscuro text-white text-xs sm:text-sm">
+          <div className="max-w-6xl mx-auto px-6 py-2 flex items-center justify-center sm:justify-between gap-4">
+            <span className="hidden sm:inline text-white/85">{HORARIO}</span>
+            <a href={TELEFONO_HREF} className="font-semibold hover:underline">
+              📞 {TELEFONO_LEGIBLE}
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100 shadow-sm">
         <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -49,10 +64,18 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
           <div>
             <p className="font-nunito font-extrabold text-xl mb-1">Agua Viflomax</p>
-            <p className="text-white/70 text-sm">Maipú, Región Metropolitana</p>
-            <p className="text-white/70 text-sm mt-1">{telefono}</p>
+            <p className="text-white/85 text-sm">Maipú, Región Metropolitana</p>
+            {TIENE_WHATSAPP && (
+              <a
+                href={TELEFONO_HREF}
+                className="text-white/85 text-sm mt-1 block hover:text-white hover:underline"
+              >
+                {TELEFONO_LEGIBLE}
+              </a>
+            )}
+            <p className="text-white/85 text-sm mt-1">{HORARIO}</p>
           </div>
-          <div className="text-white/50 text-xs text-center md:text-right">
+          <div className="text-white/70 text-xs text-center md:text-right">
             <p>© {new Date().getFullYear()} Agua Viflomax. Todos los derechos reservados.</p>
             <Link href="/login" className="text-white/40 hover:text-white/70 transition-colors">
               Acceso Staff

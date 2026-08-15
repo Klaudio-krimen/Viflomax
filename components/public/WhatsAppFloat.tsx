@@ -1,10 +1,12 @@
+import { linkWhatsApp, TIENE_WHATSAPP } from '@/lib/contacto'
+
 export function WhatsAppFloat() {
-  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ''
-  const href = `https://wa.me/${waNumber}?text=Hola%2C%20quiero%20hacer%20un%20pedido`
+  // Si no hay número configurado, no renderizamos un link roto.
+  if (!TIENE_WHATSAPP) return null
 
   return (
     <a
-      href={href}
+      href={linkWhatsApp()}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contactar por WhatsApp"
