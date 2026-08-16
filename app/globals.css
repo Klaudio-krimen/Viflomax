@@ -10,3 +10,38 @@
 .bubble {
   animation: float linear infinite;
 }
+
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+
+.logo-float {
+  animation: logo-float 5s ease-in-out infinite;
+}
+
+@keyframes waterfall {
+  0%       { transform: translateY(-10%) rotate(45deg); opacity: 0; }
+  10%, 90% { opacity: var(--drop-op, 0.3); }
+  100%     { transform: translateY(110vh) rotate(45deg); opacity: 0; }
+}
+
+.water-drop {
+  position: absolute;
+  top: -5%;
+  width: 10px;
+  height: 14px;
+  border-radius: 50% 50% 50% 0;
+  animation-name: waterfall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-float,
+  .water-drop {
+    animation: none;
+  }
+}
