@@ -2,15 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-.bubble {
-  animation: float linear infinite;
-}
-
 @keyframes logo-float {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-14px); }
