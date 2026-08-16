@@ -21,7 +21,7 @@ export function SiteHeader() {
 
       {/* Navbar */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100 shadow-sm">
-        <nav className="max-w-6xl mx-auto px-6 h-16 flex flex-wrap items-center justify-between gap-4">
+        <nav className="max-w-6xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center sm:justify-between gap-x-4 gap-y-2">
           <Link
             href="/"
             className="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-viflomax-azul-700 rounded"
