@@ -240,7 +240,7 @@ VALUES (
 ### Rutas Públicas (sin autenticación)
 ```
 /                    → Home público
-/pedir              → Formulario de pedido (público, puede mejorar con validación)
+/#pedido            → Formulario de pedido, inline en la home
 /login              → Pantalla de login
 ```
 

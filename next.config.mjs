@@ -12,6 +12,11 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      { source: '/pedir', destination: '/#pedido', permanent: true },
+    ]
+  },
 }
 
 export default withPWA({
