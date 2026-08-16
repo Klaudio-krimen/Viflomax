@@ -1,0 +1,446 @@
+[
+  {
+    "id": "E1-T1",
+    "title": "Escalas de color y alias legacy en Tailwind",
+    "epic": "01-fundaciones",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npx jest tailwind.config.test.ts` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped.",
+      "WHEN the test reads `theme.extend.colors.viflomax.azul` THE SYSTEM SHALL find the nine keys `100`, `200`, `300`, `400`, `DEFAULT`, `600`, `700`, `800`, `900`, with `DEFAULT` equal to `#2f9fd6` and `800` equal to `#164a63`.",
+      "WHEN the test reads `theme.extend.colors.viflomax.verde` THE SYSTEM SHALL find the same nine keys, with `DEFAULT` equal to `#6ab04c`, `400` equal to `#97cf6c` and `700` equal to `#3f6f31`.",
+      "WHEN the test reads the legacy sibling keys THE SYSTEM SHALL find `azul-oscuro` equal to `#164a63` and `verde-claro` equal to `#97cf6c`, so `bg-viflomax-azul-oscuro` and `bg-viflomax-verde-claro` keep resolving in the 39 files that already use them.",
+      "WHEN `npm run lint` runs THE SYSTEM SHALL exit 0 with zero errors and zero warnings.",
+      "WHEN `npm run build` runs THE SYSTEM SHALL exit 0."
+    ],
+    "verify": [
+      "npx jest tailwind.config.test.ts",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-01-tokens-color",
+    "files": [
+      "tailwind.config.ts",
+      "tailwind.config.test.ts"
+    ],
+    "status": "done"
+  },
+  {
+    "id": "E1-T2",
+    "title": "Logo optimizado con transparencia",
+    "epic": "01-fundaciones",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `test -f public/logo.png` runs THE SYSTEM SHALL exit 0.",
+      "WHEN the size check reads `public/logo.png` THE SYSTEM SHALL report fewer than 153600 bytes.",
+      "WHEN the PNG header check reads the IHDR chunk THE SYSTEM SHALL report colour type 4 or 6, or colour type 3 accompanied by a `tRNS` chunk, so the mark keeps a transparent background over the hero gradient.",
+      "WHEN the PNG header check reads the IHDR width THE SYSTEM SHALL report at least 600 pixels, so the mark is not a thumbnail upscaled in the hero.",
+      "WHEN `git check-ignore -q public/logo.png` runs THE SYSTEM SHALL exit 1, meaning no ignore pattern excludes the new asset.",
+      "WHEN `test -f public/logo.jpeg` runs THE SYSTEM SHALL exit 0, because `app/icon.tsx`, `app/icon-192/route.tsx`, `app/icon-512/route.tsx` and `app/apple-icon.tsx` still serve it."
+    ],
+    "verify": [
+      "cat > scripts-check-logo.cjs <<'EOF'\nconst fs = require('fs')\nconst b = fs.readFileSync('public/logo.png')\nconst fail = (m) => { console.error('FALLA:', m); process.exit(1) }\nif (b.length >= 153600) fail('pesa ' + b.length + ' bytes, el limite es 153600')\nif (b.toString('latin1', 1, 4) !== 'PNG') fail('no es un PNG')\nconst ancho = b.readUInt32BE(16)\nconst tipoColor = b[25]\nif (ancho < 600) fail('ancho ' + ancho + 'px, minimo 600')\nconst tieneTRNS = b.includes(Buffer.from('tRNS', 'latin1'))\nif (!(tipoColor === 4 || tipoColor === 6 || (tipoColor === 3 && tieneTRNS))) {\n  fail('tipo de color ' + tipoColor + ' sin canal alfa ni tRNS')\n}\nconsole.log('OK', b.length, 'bytes,', ancho + 'px, tipo de color', tipoColor)\nEOF",
+      "test -f public/logo.png",
+      "test -f public/logo.jpeg",
+      "node scripts-check-logo.cjs",
+      "git check-ignore -q public/logo.png; test $? -eq 1",
+      "rm -f scripts-check-logo.cjs",
+      "test ! -e scripts-check-logo.cjs"
+    ],
+    "checkpoint": "step-02-logo-optimizado",
+    "files": [
+      "public/logo.png",
+      "scripts-check-logo.cjs"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T3",
+    "title": "Keyframes, gota y guardia de movimiento reducido",
+    "epic": "01-fundaciones",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm run build` runs THE SYSTEM SHALL exit 0, proving Tailwind compiled `app/globals.css` with no CSS syntax error.",
+      "WHEN `grep` searches `app/globals.css` THE SYSTEM SHALL find `@keyframes logo-float` and the literal `translateY(-14px)`.",
+      "WHEN `grep` searches `app/globals.css` THE SYSTEM SHALL find a `.logo-float` rule whose animation shorthand carries `5s`, `ease-in-out` and `infinite`.",
+      "WHEN `grep` searches `app/globals.css` THE SYSTEM SHALL find `@keyframes waterfall` carrying `rotate(45deg)` inside the transform of both the 0% and the 100% stop, and `translateY(110vh)` at the 100% stop.",
+      "WHEN `grep` searches `app/globals.css` THE SYSTEM SHALL find a `.water-drop` rule carrying `border-radius: 50% 50% 50% 0`, `width: 10px`, `height: 14px` and `animation-name: waterfall`.",
+      "WHEN `grep` searches `app/globals.css` THE SYSTEM SHALL find a `prefers-reduced-motion: reduce` block that sets `animation: none` and names both `.logo-float` and `.water-drop`."
+    ],
+    "verify": [
+      "grep -q '@keyframes logo-float' app/globals.css",
+      "grep -q 'translateY(-14px)' app/globals.css",
+      "grep -q 'animation: logo-float 5s ease-in-out infinite' app/globals.css",
+      "grep -q '@keyframes waterfall' app/globals.css",
+      "grep -q 'translateY(-10%) rotate(45deg)' app/globals.css",
+      "grep -q 'translateY(110vh) rotate(45deg)' app/globals.css",
+      "grep -q 'border-radius: 50% 50% 50% 0' app/globals.css",
+      "grep -q 'width: 10px' app/globals.css",
+      "grep -q 'height: 14px' app/globals.css",
+      "grep -q 'animation-name: waterfall' app/globals.css",
+      "grep -q 'prefers-reduced-motion: reduce' app/globals.css",
+      "grep -A4 'prefers-reduced-motion: reduce' app/globals.css | grep -q 'animation: none'",
+      "npm run build"
+    ],
+    "checkpoint": "step-03-keyframes-motion",
+    "files": [
+      "app/globals.css"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T4",
+    "title": "Generador determinista de gotas",
+    "epic": "01-fundaciones",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npx jest lib/landing/gotas.test.ts` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped.",
+      "WHEN `generarGotas(7, 16, 'x')` is called twice in the same process THE SYSTEM SHALL return two deeply equal arrays, proving the generator is seeded and never calls `Math.random`.",
+      "WHEN `generarGotas(7, 16, 'x')` is called THE SYSTEM SHALL return exactly 16 items, every one with `left` between 0 and 100 inclusive.",
+      "WHEN `generarGotas(7, 16, 'x')` is called THE SYSTEM SHALL return every item with `duracion` between 4 and 9, `retraso` between -9 and 0, and `opacidad` between 0.15 and 0.4.",
+      "WHEN `generarGotas(7, 16, 'x')[0].left` is read THE SYSTEM SHALL equal 49.04 to two decimal places, the value the LCG `(s * 9301 + 49297) % 233280` yields from seed 7.",
+      "WHEN `generarGotas(11, 16, 'x')` is compared with `generarGotas(7, 16, 'x')` THE SYSTEM SHALL return a different array, proving the seed is honoured rather than ignored."
+    ],
+    "verify": [
+      "npx jest lib/landing/gotas.test.ts",
+      "npm run lint"
+    ],
+    "checkpoint": "step-04-gotas",
+    "files": [
+      "lib/landing/gotas.ts",
+      "lib/landing/gotas.test.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T5",
+    "title": "Constructores puros del pedido",
+    "epic": "01-fundaciones",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npx jest lib/landing/mensaje-whatsapp.test.ts lib/landing/payload-pedido.test.ts` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped.",
+      "WHEN `construirMensajeWhatsApp` receives the fixture with `notas` THE SYSTEM SHALL return exactly `Hola! Quiero hacer un pedido de Agua Viflomax:` then a newline, `Producto: Recarga 20 Litros x2` then a newline, `Nombre: Ana Pérez` then a newline, `Teléfono: +56 9 1234 5678` then a newline, `Dirección: Av. Ejemplo 123, Maipú` then a newline, and `Notas: Dejar en conserjería`.",
+      "WHEN `construirMensajeWhatsApp` receives the same fixture with `notas` absent or blank THE SYSTEM SHALL return a string of exactly 5 lines that does not contain the substring `Notas:`.",
+      "WHEN `construirPayloadPedido` receives a filled form THE SYSTEM SHALL return an object whose keys are exactly `nombre`, `telefono`, `direccion`, `comuna` and `items`, with `items[0].productoId` equal to the product name as it appears in `PRODUCTOS` and `items[0].cantidad` a number greater than 0.",
+      "WHEN `construirPayloadPedido` receives an empty `email` or an empty `notas` THE SYSTEM SHALL omit those keys from the returned object rather than sending an empty string.",
+      "WHEN `construirPayloadPedido` receives `comuna` equal to `Otra comuna` THE SYSTEM SHALL pass it through verbatim, because `/api/pedidos/publico` answers 400 when `comuna` is blank."
+    ],
+    "verify": [
+      "npx jest lib/landing/mensaje-whatsapp.test.ts",
+      "npx jest lib/landing/payload-pedido.test.ts",
+      "npm run lint"
+    ],
+    "checkpoint": "step-05-constructores-pedido",
+    "files": [
+      "lib/landing/mensaje-whatsapp.ts",
+      "lib/landing/mensaje-whatsapp.test.ts",
+      "lib/landing/payload-pedido.ts",
+      "lib/landing/payload-pedido.test.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T6",
+    "title": "Filtro de catálogo y zona de cobertura",
+    "epic": "01-fundaciones",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npx jest lib/productos.test.ts lib/contacto.test.ts` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped.",
+      "WHEN `filtrarPorCategoria(PRODUCTOS, 'todos')` is called THE SYSTEM SHALL return all 9 products in their original order.",
+      "WHEN `filtrarPorCategoria(PRODUCTOS, 'agua')` is called THE SYSTEM SHALL return exactly 4 products, every one of them with `categoria` equal to `agua`.",
+      "WHEN `filtrarPorCategoria(PRODUCTOS, 'dispensadores')` and `filtrarPorCategoria(PRODUCTOS, 'extras')` are called THE SYSTEM SHALL return exactly 3 and exactly 2 products respectively.",
+      "WHEN `filtrarPorCategoria` returns THE SYSTEM SHALL have returned a new array and SHALL NOT have mutated `PRODUCTOS`, whose length stays 9.",
+      "WHEN `ZONA` is read from `lib/contacto.ts` THE SYSTEM SHALL equal `Maipú y Padre Hurtado`, and `HORARIO` SHALL still equal `Lun a Sáb · 9:00 – 19:00 hrs`."
+    ],
+    "verify": [
+      "npx jest lib/productos.test.ts",
+      "npx jest lib/contacto.test.ts",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-06-filtros-catalogo",
+    "files": [
+      "lib/productos.ts",
+      "lib/productos.test.ts",
+      "lib/contacto.ts",
+      "lib/contacto.test.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T1",
+    "title": "Shell del sitio: header y footer",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm run lint` and `npm run build` run THE SYSTEM SHALL exit 0 on both, with zero lint errors and zero lint warnings.",
+      "WHEN `app/(public)/layout.tsx` is read THE SYSTEM SHALL contain exactly one `<SiteHeader />` and one `<SiteFooter />`, and SHALL NOT contain any inline `<header` or `<footer` markup.",
+      "WHEN `grep` searches `components/public/SiteHeader.tsx` and `components/public/SiteFooter.tsx` for the digit sequence `569` THE SYSTEM SHALL find no match, because every contact value comes from `lib/contacto.ts`.",
+      "WHEN `grep` searches `components/public/SiteHeader.tsx`, `components/public/SiteFooter.tsx` and `app/(public)/layout.tsx` for `/pedir` THE SYSTEM SHALL find no match: the shell links to `#pedido` and `#productos`, never to the page being retired.",
+      "WHEN `grep` searches `components/public/SiteHeader.tsx` for the CTA class THE SYSTEM SHALL find `bg-viflomax-verde-700`, the only green that carries white text at 5.95:1.",
+      "WHEN `npx jest` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped, so the gates of steps 1 and 4 to 6 still pass."
+    ],
+    "verify": [
+      "grep -c '<SiteHeader />' 'app/(public)/layout.tsx' | grep -qx 1",
+      "grep -c '<SiteFooter />' 'app/(public)/layout.tsx' | grep -qx 1",
+      "grep -q '<header' 'app/(public)/layout.tsx'; test $? -eq 1",
+      "grep -q '<footer' 'app/(public)/layout.tsx'; test $? -eq 1",
+      "grep -q '569' components/public/SiteHeader.tsx components/public/SiteFooter.tsx; test $? -eq 1",
+      "grep -q '/pedir' components/public/SiteHeader.tsx components/public/SiteFooter.tsx; test $? -eq 1",
+      "grep -q '/pedir' 'app/(public)/layout.tsx'; test $? -eq 1",
+      "grep -q 'bg-viflomax-verde-700' components/public/SiteHeader.tsx",
+      "npm run lint",
+      "npm run build",
+      "npx jest"
+    ],
+    "checkpoint": "step-07-shell-sitio",
+    "files": [
+      "components/public/SiteHeader.tsx",
+      "components/public/SiteFooter.tsx",
+      "app/(public)/layout.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T2",
+    "title": "Hero nuevo y limpieza del CSS muerto",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E1-T1",
+      "E1-T2",
+      "E1-T3",
+      "E2-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm run lint` and `npm run build` run THE SYSTEM SHALL exit 0 on both, with zero lint errors and zero lint warnings.",
+      "WHEN `grep -r` searches the `app` and `components` trees for `bubble` THE SYSTEM SHALL find no match, so the dead class and its keyframes are gone along with their last consumer.",
+      "WHEN `components/public/Hero.tsx` is read THE SYSTEM SHALL import `Image` from `next/image` and render `/logo.png` with explicit `width`, `height` and `priority`.",
+      "WHEN `components/public/Hero.tsx` is read THE SYSTEM SHALL apply the `logo-float` class to the logo wrapper.",
+      "WHEN `components/public/Hero.tsx` is read THE SYSTEM SHALL contain a `bg-black/30` layer, the scrim that lifts all white text in the hero over the lightest gradient stop to 5.03:1 - without it not even the `<h1>` clears 3:1.",
+      "WHEN `grep` searches `components/public/Hero.tsx` for `/pedir` THE SYSTEM SHALL find no match: both hero CTAs are in-page anchors."
+    ],
+    "verify": [
+      "grep -rq 'bubble' app components; test $? -eq 1",
+      "grep -q \"from 'next/image'\" components/public/Hero.tsx",
+      "grep -q '/logo.png' components/public/Hero.tsx",
+      "grep -q 'priority' components/public/Hero.tsx",
+      "grep -q 'logo-float' components/public/Hero.tsx",
+      "grep -q 'bg-black/30' components/public/Hero.tsx",
+      "grep -q '/pedir' components/public/Hero.tsx; test $? -eq 1",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-08-hero",
+    "files": [
+      "components/public/Hero.tsx",
+      "app/globals.css"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T3",
+    "title": "Lluvia de gotas y contexto de pedido",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E1-T3",
+      "E1-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm run lint` and `npm run build` run THE SYSTEM SHALL exit 0 on both, with zero lint errors and zero lint warnings.",
+      "WHEN `components/public/PedidoProvider.tsx` is read THE SYSTEM SHALL begin with the `'use client'` directive and export both `PedidoProvider` and `usePedido`.",
+      "WHEN `grep` searches `components/public/PedidoProvider.tsx` for `throw new Error` THE SYSTEM SHALL find the guard `usePedido` raises when it is called outside `PedidoProvider`.",
+      "WHEN `grep` searches `components/public/LluviaDeGotas.tsx` for `use client`, `useEffect` and `Math.random` THE SYSTEM SHALL find none of the three, so the component renders identically on the server and on the client.",
+      "WHEN `grep` searches `components/public/LluviaDeGotas.tsx` THE SYSTEM SHALL find both `water-drop` and `--drop-op`, the class and the custom property the `waterfall` keyframes read.",
+      "WHEN `grep` searches `components/public/LluviaDeGotas.tsx` THE SYSTEM SHALL find `aria-hidden`, because the rain is decoration and must not reach assistive technology."
+    ],
+    "verify": [
+      "head -1 components/public/PedidoProvider.tsx | grep -q \"use client\"",
+      "grep -q 'export function PedidoProvider' components/public/PedidoProvider.tsx",
+      "grep -q 'export function usePedido' components/public/PedidoProvider.tsx",
+      "grep -q 'throw new Error' components/public/PedidoProvider.tsx",
+      "grep -q 'use client' components/public/LluviaDeGotas.tsx; test $? -eq 1",
+      "grep -q 'useEffect' components/public/LluviaDeGotas.tsx; test $? -eq 1",
+      "grep -q 'Math.random' components/public/LluviaDeGotas.tsx; test $? -eq 1",
+      "grep -q 'water-drop' components/public/LluviaDeGotas.tsx",
+      "grep -q -- '--drop-op' components/public/LluviaDeGotas.tsx",
+      "grep -q 'aria-hidden' components/public/LluviaDeGotas.tsx",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-09-lluvia-provider",
+    "files": [
+      "components/public/LluviaDeGotas.tsx",
+      "components/public/PedidoProvider.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T4",
+    "title": "Catálogo con filtro, lluvia y salto al formulario",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E1-T6",
+      "E2-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm run lint` and `npm run build` run THE SYSTEM SHALL exit 0 on both, with zero lint errors and zero lint warnings.",
+      "WHEN `grep` searches `components/public/ProductGrid.tsx` THE SYSTEM SHALL find `filtrarPorCategoria` imported from `@/lib/productos` and SHALL NOT find any `PRODUCTOS.filter` call.",
+      "WHEN `grep` searches `components/public/ProductGrid.tsx` for a line starting with `const GOTAS_PRODUCTOS = generarGotas(` at column 0 THE SYSTEM SHALL find it, proving the drop array is built once at module scope and is therefore identical on the server render and on hydration.",
+      "WHEN `grep` searches `components/public/ProductGrid.tsx` for `/pedir` THE SYSTEM SHALL find no match: the card action calls `setProductoSeleccionado` and moves to `#pedido`.",
+      "WHEN `grep` searches `components/public/ProductGrid.tsx` THE SYSTEM SHALL find `bg-viflomax-verde-700` on the card action and on the badge, the two white-on-green surfaces that need 5.95:1.",
+      "WHEN the active filter yields no product THE SYSTEM SHALL render the empty-state text instead of an empty grid, which `grep` confirms by finding the literal `No hay productos en esta categoría`."
+    ],
+    "verify": [
+      "grep -q 'filtrarPorCategoria' components/public/ProductGrid.tsx",
+      "grep -q \"from '@/lib/productos'\" components/public/ProductGrid.tsx",
+      "grep -q 'PRODUCTOS.filter' components/public/ProductGrid.tsx; test $? -eq 1",
+      "grep -q '^const GOTAS_PRODUCTOS = generarGotas(' components/public/ProductGrid.tsx",
+      "grep -q '/pedir' components/public/ProductGrid.tsx; test $? -eq 1",
+      "grep -q 'setProductoSeleccionado' components/public/ProductGrid.tsx",
+      "grep -q 'id=\"productos\"' components/public/ProductGrid.tsx",
+      "grep -q 'bg-viflomax-verde-700' components/public/ProductGrid.tsx",
+      "grep -q 'No hay productos en esta categoría' components/public/ProductGrid.tsx",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-10-product-grid",
+    "files": [
+      "components/public/ProductGrid.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T5",
+    "title": "Secciones de confianza y cobertura",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E1-T6",
+      "E2-T3"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "WHEN `npm run lint` and `npm run build` run THE SYSTEM SHALL exit 0 on both, with zero lint errors and zero lint warnings.",
+      "WHEN `grep` searches `components/public/PorQueElegirnos.tsx` and `components/public/Cobertura.tsx` for `use client` THE SYSTEM SHALL find no match, so both stay Server Components and ship zero client JavaScript.",
+      "WHEN `grep -c` counts `<svg` in `components/public/PorQueElegirnos.tsx` THE SYSTEM SHALL report 3, one inline icon per column, with no icon-library import anywhere in the file.",
+      "WHEN `components/public/Cobertura.tsx` is read THE SYSTEM SHALL render the two coverage badges `Maipú` and `Padre Hurtado` and SHALL take its zone line from `ZONA` in `lib/contacto.ts`.",
+      "WHEN `grep` searches `components/public/Cobertura.tsx` for a line starting with `const GOTAS_COBERTURA = generarGotas(` at column 0 THE SYSTEM SHALL find it, so this section's rain is built once at module scope with its own seed.",
+      "WHEN `grep` searches both files for `from 'lucide-react'` or any other icon-package import THE SYSTEM SHALL find no match, because this change adds zero npm packages."
+    ],
+    "verify": [
+      "grep -q 'use client' components/public/PorQueElegirnos.tsx components/public/Cobertura.tsx; test $? -eq 1",
+      "grep -c '<svg' components/public/PorQueElegirnos.tsx | grep -qx 3",
+      "grep -qE \"from '(lucide-react|react-icons|@heroicons)\" components/public/PorQueElegirnos.tsx components/public/Cobertura.tsx; test $? -eq 1",
+      "grep -q 'Padre Hurtado' components/public/Cobertura.tsx",
+      "grep -q 'Maipú' components/public/Cobertura.tsx",
+      "grep -q 'ZONA' components/public/Cobertura.tsx",
+      "grep -q '^const GOTAS_COBERTURA = generarGotas(' components/public/Cobertura.tsx",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-11-secciones-confianza",
+    "files": [
+      "components/public/PorQueElegirnos.tsx",
+      "components/public/Cobertura.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T6",
+    "title": "Formulario de pedido inline",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E1-T5",
+      "E2-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npx jest lib/landing/respuesta-pedido.test.ts` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped.",
+      "WHEN `interpretarRespuestaPedido` receives status 201 with `{ data: { pedido_id, numero_pedido }, error: null }` THE SYSTEM SHALL return an object with `ok` true carrying `numero_pedido` as `numeroPedido`.",
+      "WHEN `interpretarRespuestaPedido` receives status 400 with `error` equal to `Los campos nombre, teléfono, dirección y comuna son obligatorios` THE SYSTEM SHALL return an object with `ok` false whose `mensaje` is that exact string, which is the branch that skips WhatsApp.",
+      "WHEN `interpretarRespuestaPedido` receives status 500 with `error` equal to `Error al crear el pedido`, or any non-201 status with a null or blank `error`, THE SYSTEM SHALL return `ok` false with a non-empty `mensaje`.",
+      "WHEN `grep` searches `components/public/PedidoForm.tsx` THE SYSTEM SHALL find `construirPayloadPedido`, `construirMensajeWhatsApp`, `interpretarRespuestaPedido`, `linkWhatsApp` and `TIENE_WHATSAPP`, and SHALL find no literal digit sequence `569`.",
+      "WHEN `grep` searches `components/public/PedidoForm.tsx` THE SYSTEM SHALL find the three comuna options `Maipú`, `Padre Hurtado` and `Otra comuna`, and a `required` attribute on the comuna select."
+    ],
+    "verify": [
+      "npx jest lib/landing/respuesta-pedido.test.ts",
+      "grep -q 'construirPayloadPedido' components/public/PedidoForm.tsx",
+      "grep -q 'construirMensajeWhatsApp' components/public/PedidoForm.tsx",
+      "grep -q 'interpretarRespuestaPedido' components/public/PedidoForm.tsx",
+      "grep -q 'linkWhatsApp' components/public/PedidoForm.tsx",
+      "grep -q 'TIENE_WHATSAPP' components/public/PedidoForm.tsx",
+      "grep -q '569' components/public/PedidoForm.tsx; test $? -eq 1",
+      "grep -q 'Otra comuna' components/public/PedidoForm.tsx",
+      "grep -q 'Padre Hurtado' components/public/PedidoForm.tsx",
+      "grep -q \"'/api/pedidos/publico'\" components/public/PedidoForm.tsx",
+      "npm run lint",
+      "npm run build"
+    ],
+    "checkpoint": "step-12-pedido-form",
+    "files": [
+      "lib/landing/respuesta-pedido.ts",
+      "lib/landing/respuesta-pedido.test.ts",
+      "components/public/PedidoForm.tsx"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T7",
+    "title": "Cutover: ensamblado, redirección y retiro de /pedir",
+    "epic": "02-interfaz-publica",
+    "dependencies": [
+      "E2-T2",
+      "E2-T4",
+      "E2-T5",
+      "E2-T6"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm run lint` and `npm run build` run THE SYSTEM SHALL exit 0 on both, with zero lint errors and zero lint warnings.",
+      "WHEN `app/(public)/page.tsx` is read THE SYSTEM SHALL render `Hero`, then `PedidoProvider` wrapping `ProductGrid`, `PorQueElegirnos`, `Cobertura` and a `section` with `id=\"pedido\"` holding `PedidoForm`.",
+      "WHEN `test ! -e app/(public)/pedir/page.tsx` and `test ! -e components/public/OrderForm.tsx` run THE SYSTEM SHALL exit 0 on both, so the retired flow is deleted and not merely unlinked.",
+      "WHEN `next.config.mjs` is read THE SYSTEM SHALL contain a `redirects()` key returning `source` `/pedir`, `destination` `/#pedido` and `permanent` true, and SHALL still contain the pre-existing `headers()` key with `Permissions-Policy`.",
+      "WHEN `grep -r` searches the `app` and `components` trees for `/pedir`, and `grep` searches `ROLES.md`, THE SYSTEM SHALL find no match in either, so neither a link nor the route documentation survives the retirement.",
+      "WHEN `npx jest` runs THE SYSTEM SHALL exit 0 with 0 failed and 0 skipped, so every gate from steps 1, 4, 5, 6 and 12 still passes."
+    ],
+    "verify": [
+      "test ! -e 'app/(public)/pedir/page.tsx'",
+      "test ! -e components/public/OrderForm.tsx",
+      "grep -q 'PedidoProvider' 'app/(public)/page.tsx'",
+      "grep -q 'id=\"pedido\"' 'app/(public)/page.tsx'",
+      "grep -q 'PorQueElegirnos' 'app/(public)/page.tsx'",
+      "grep -q 'Cobertura' 'app/(public)/page.tsx'",
+      "grep -q 'async redirects()' next.config.mjs",
+      "grep -q \"source: '/pedir'\" next.config.mjs",
+      "grep -q \"destination: '/#pedido'\" next.config.mjs",
+      "grep -q 'async headers()' next.config.mjs",
+      "grep -q 'Permissions-Policy' next.config.mjs",
+      "grep -rq '/pedir' app components; test $? -eq 1",
+      "grep -q '/pedir' ROLES.md; test $? -eq 1",
+      "npm run lint",
+      "npm run build",
+      "npx jest"
+    ],
+    "checkpoint": "step-13-cutover-landing",
+    "files": [
+      "app/(public)/page.tsx",
+      "next.config.mjs",
+      "ROLES.md",
+      "app/(public)/pedir/page.tsx",
+      "components/public/OrderForm.tsx"
+    ],
+    "status": "pending"
+  }
+]
