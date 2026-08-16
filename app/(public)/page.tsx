@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Hero } from '@/components/public/Hero'
 import { ProductGrid } from '@/components/public/ProductGrid'
+import { PedidoProvider } from '@/components/public/PedidoProvider'
 
 export default function HomePage() {
   return (
@@ -9,7 +10,12 @@ export default function HomePage() {
       <Hero />
 
       {/* 2. Product grid */}
-      <ProductGrid />
+      {/* NOTA: envoltorio temporal para que ProductGrid (E2-T4) tenga su
+          PedidoProvider (E2-T3) y el build no rompa entre tareas. E2-T7
+          reescribe este archivo por completo con el ensamblado final. */}
+      <PedidoProvider>
+        <ProductGrid />
+      </PedidoProvider>
 
       {/* 3. Why choose us */}
       <section className="py-16 bg-white">
