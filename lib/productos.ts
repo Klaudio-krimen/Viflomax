@@ -57,11 +57,11 @@ export const PRODUCTOS: Producto[] = [
     imagen: '/productos/dispensador-bomba-usb.jpg',
   },
   {
-    nombre: 'Dispensador USB Sobremesa',
+    nombre: 'Dispensador Eléctrico Sobremesa',
     precio: 20000,
     categoria: 'dispensadores',
-    descripcion: 'Base de sobremesa con bomba USB integrada.',
-    imagen: '/productos/dispensador-usb-sobremesa.jpg',
+    descripcion: 'Base de sobremesa con bomba eléctrica integrada.',
+    imagen: '/productos/dispensador-electrico-sobremesa.jpg',
   },
   {
     nombre: 'Dispensador Básico Sobremesa',
