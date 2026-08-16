@@ -34,4 +34,4 @@ export function linkWhatsApp(mensaje = 'Hola, quiero hacer un pedido'): string {
 }
 
 export const HORARIO = 'Lun a Sáb · 9:00 – 19:00 hrs'
-export const ZONA = 'Maipú y comunas cercanas'
+export const ZONA = 'Maipú y Padre Hurtado'

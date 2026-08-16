@@ -92,3 +92,15 @@ export const formatCLP = (precio: number) =>
     currency: 'CLP',
     maximumFractionDigits: 0,
   }).format(precio)
+
+/**
+ * Filtra el catálogo por categoría sin mutar `productos`. Con `'todos'`
+ * devuelve todos los productos en su orden original.
+ */
+export function filtrarPorCategoria(
+  productos: Producto[],
+  filtro: 'todos' | CategoriaId
+): Producto[] {
+  if (filtro === 'todos') return [...productos]
+  return productos.filter((producto) => producto.categoria === filtro)
+}
