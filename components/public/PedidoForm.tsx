@@ -100,7 +100,7 @@ export function PedidoForm() {
 
         <div>
           <label htmlFor="pedido-email" className="block text-sm font-semibold text-gray-700 mb-1">
-            Email <span className="font-normal text-gray-400">(opcional)</span>
+            Email <span className="font-normal text-gray-600">(opcional)</span>
           </label>
           <input
             id="pedido-email"
@@ -183,7 +183,7 @@ export function PedidoForm() {
 
         <div>
           <label htmlFor="pedido-notas" className="block text-sm font-semibold text-gray-700 mb-1">
-            Notas <span className="font-normal text-gray-400">(opcional)</span>
+            Notas <span className="font-normal text-gray-600">(opcional)</span>
           </label>
           <textarea
             id="pedido-notas"

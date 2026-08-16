@@ -20,7 +20,10 @@ export function SiteFooter() {
         </div>
         <div className="text-white/70 text-xs text-center md:text-right">
           <p>© {new Date().getFullYear()} Agua Viflomax. Todos los derechos reservados.</p>
-          <Link href="/login" className="text-white/40 hover:text-white/70 transition-colors">
+          <Link
+            href="/login"
+            className="text-white/70 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-white rounded"
+          >
             Acceso Staff
           </Link>
         </div>

@@ -17,18 +17,18 @@ export function Hero() {
       />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-24 text-center text-white">
-        <div className="logo-float inline-block mb-6">
+        <div className="logo-float block w-fit mx-auto mb-6">
           <Image
             src="/logo.png"
             alt="Agua Viflomax"
             width={900}
             height={694}
             priority
-            className="w-40 sm:w-56 h-auto mx-auto drop-shadow-xl"
+            className="w-40 sm:w-56 h-auto drop-shadow-xl"
           />
         </div>
 
-        <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6 tracking-wide">
+        <span className="block w-fit mx-auto bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-6 tracking-wide">
           Distribución en Maipú y Padre Hurtado
         </span>
 

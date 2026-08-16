@@ -12,7 +12,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <SiteFooter />
 
       {/* WhatsApp floating button */}
-      <WhatsAppFloat />
+      <aside aria-label="Contacto rápido por WhatsApp">
+        <WhatsAppFloat />
+      </aside>
     </>
   )
 }
